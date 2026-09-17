@@ -31,7 +31,7 @@ import org.hibernate.type.SqlTypes;
                 @CheckConstraint(name = "chk_courses_period",
                         constraint = "start_date IS NULL OR end_date IS NULL OR start_date <= end_date"),
                 @CheckConstraint(name = "chk_courses_published_fields",
-                        constraint = "status = 'DRAFT' OR (start_date IS NOT NULL AND end_date IS NOT NULL AND instructor_id IS NOT NULL)"),
+                        constraint = "status = 'DRAFT' OR (start_date IS NOT NULL AND end_date IS NOT NULL)"),
                 @CheckConstraint(name = "chk_courses_course_type",
                         constraint = "CAST(course_type AS BINARY) IN ('MANDATORY', 'OPTIONAL')"),
                 @CheckConstraint(name = "chk_courses_status",
@@ -79,7 +79,7 @@ public class Course extends BaseTimeEntity {
     @Column(name = "passing_progress_rate", nullable = false, precision = 5, scale = 2)
     private BigDecimal passingProgressRate = new BigDecimal("100.00");
 
-    // 담당 강사 (초안에서는 null 허용)
+    // 담당 강사 (모든 상태에서 null 허용, 지정 시 INSTRUCTOR 역할을 Service에서 검증)
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "instructor_id", nullable = true,
             foreignKey = @ForeignKey(name = "fk_courses_instructor", options = "ON DELETE RESTRICT ON UPDATE RESTRICT"))
