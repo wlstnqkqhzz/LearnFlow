@@ -15,6 +15,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -114,6 +117,30 @@ public class MemberService {
 
     public MemberResponse get(@NotNull @Positive Long id) {
         return MemberResponse.from(find(id));
+    }
+
+    // 부분 수정은 잠긴 최신 회원 정보와 병합하여 생략 필드를 유지
+    @Transactional
+    public MemberResponse patch(@NotNull @Positive Long id,
+                                @NotNull @Valid MemberPatchRequest request) {
+        Member member = findForUpdate(id);
+        member.ensureEditable();
+        String email = request.getEmail() == null ? member.getEmail() : request.getEmail();
+        if (memberRepository.existsByEmailAndIdNot(email, id)) {
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+        }
+        member.updateProfile(email,
+                request.getName() == null ? member.getName() : request.getName(),
+                request.getHireDate() == null ? member.getHireDate() : request.getHireDate());
+        return flushAndRespond(member);
+    }
+
+    // 단순 조건 검색과 안정적인 ID 정렬로 직원 페이지 조회
+    public Page<MemberResponse> search(@NotNull @Valid MemberSearchRequest request) {
+        String pattern = request.name() == null ? null
+                : "%" + request.name().replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+        return memberRepository.search(pattern, request.departmentId(), request.jobPositionId(), request.status(),
+                PageRequest.of(request.page(), request.size(), Sort.by("id"))).map(MemberResponse::from);
     }
 
     private Member find(Long id) {

@@ -83,6 +83,24 @@ public class DepartmentService {
                 .map(DepartmentResponse::from).toList();
     }
 
+    // 상위 부서 생략은 유지, 명시적 null은 최상위 부서로 이동
+    @Transactional
+    public DepartmentResponse patch(@NotNull @Positive Long id,
+                                    @NotNull @Valid DepartmentPatchRequest request) {
+        List<Department> departments = departmentRepository.findAllForUpdate();
+        Department department = findInLockedHierarchy(departments, id);
+        if (request.isParentDepartmentSpecified()) {
+            Department parent = request.getParentDepartmentId() == null ? null
+                    : findInLockedHierarchy(departments, request.getParentDepartmentId());
+            department.changeParent(parent);
+        }
+        if (request.getName() != null) {
+            department.rename(request.getName());
+        }
+        departmentRepository.flush();
+        return DepartmentResponse.from(department);
+    }
+
     // 잠긴 동일 영속성 컨텍스트의 계층에서 조회하여 상위 부서를 검증
     private Department findInLockedHierarchy(List<Department> departments, Long id) {
         return departments.stream().filter(department -> id.equals(department.getId()))
