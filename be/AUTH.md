@@ -1,105 +1,137 @@
-# Access Token 인증 1단계
+# JWT 인증 2단계
 
 ## 설정
 
-필수 환경변수:
-
-| 이름 | 내용 |
+| 환경변수 | 내용 |
 |---|---|
 | JWT_SECRET | 무작위 32바이트 이상을 Base64로 인코딩한 HS256 서명 키 |
-| JWT_ACCESS_TOKEN_TTL_SECONDS | Access Token 유효 기간(초), 양의 정수. 예: 1800 |
+| JWT_ACCESS_TOKEN_TTL_SECONDS | Access Token 유효 기간(초), 양수 |
+| JWT_REFRESH_TOKEN_TTL_SECONDS | Refresh Token 유효 기간 및 Redis TTL(초), 양수 |
+| REDIS_HOST | Redis 주소, 기본 localhost |
+| REDIS_PORT | Redis 포트, 기본 6379 |
 
-Secret과 만료 시간의 기본값은 제공하지 않는다. 값이 없거나 키가 짧으면 기동을 중단한다.
-Secret은 비밀번호 문구가 아니라 암호학적 난수로 생성하고 저장소에 커밋하지 않는다.
-기존 DB 연결 설정도 필요하다. 환경변수는 실행하는 IDE 또는 프로세스에 설정한다.
+Secret과 두 만료 시간은 필수 설정이다. 키나 토큰을 로그·저장소에 남기지 않는다.
+기존 DB 연결 설정도 필요하다. local 프로필에서도 동일한 인증 정책을 사용한다.
 
-## 로그인
+## API
 
-```http
-POST /api/auth/login
-Content-Type: application/json
+| 요청 | 접근 정책 | 성공 |
+|---|---|---|
+| POST /api/auth/login | permitAll | 200 |
+| POST /api/auth/refresh | permitAll, 본문의 Refresh Token 검증 | 200 |
+| POST /api/auth/logout | Access Token 인증 필요, 역할 무관 | 204 |
+| /api/departments 및 하위 경로 | ADMIN | 기존 정책 유지 |
+| /api/job-positions 및 하위 경로 | ADMIN | 기존 정책 유지 |
+| /api/members 및 하위 경로 | ADMIN | 기존 정책 유지 |
+| 그 외 경로 | 차단 | - |
 
+로그인 본문:
+
+```json
 {"email":"user@example.com","password":"사용자의 비밀번호"}
 ```
 
-정상 응답은 200이며 Cache-Control: no-store를 적용한다.
+재발급 본문 (Authorization 헤더가 아님):
+
+```json
+{"refreshToken":"<현재 Refresh Token>"}
+```
+
+로그인과 재발급은 기존 LoginResponse를 공유하고 Cache-Control: no-store를 적용한다.
 
 ```json
 {
-  "accessToken": "<서명된 JWT>",
+  "accessToken": "<Access Token>",
+  "refreshToken": "<새 Refresh Token>",
   "tokenType": "Bearer",
-  "expiresIn": 1800
+  "accessTokenExpiresInSeconds": 1800,
+  "refreshTokenExpiresInSeconds": 604800
 }
 ```
 
-이메일은 trim/lowercase로 정규화하고 기존 PBKDF2 PasswordEncoder로 검증한다.
-ACTIVE와 ON_LEAVE는 로그인 가능하다. RESIGNED, 비밀번호 불일치, 없는 계정은
-모두 같은 401 오류를 반환하여 계정의 존재·상태를 응답으로 구분하지 않는다.
+위 시간은 예시이며 실제 값은 환경변수 설정을 따른다.
+로그아웃은 Authorization: Bearer <accessToken> 헤더로 호출하며 응답 본문은 없다.
 
-JWT 업무 클레임은 memberId, email, roles만 포함한다.
-표준 시간 클레임 iat(발급 시각), exp(만료 시각)를 추가하며 비밀번호·부서 등은 넣지 않는다.
-HS256만 허용하고 서명, 만료, 발급 시각, 필수 클레임을 검증한다.
+## 인증 및 재발급 흐름
 
-## 인증 흐름
+- 로그인은 이메일 정규화 후 기존 PasswordEncoder로 비밀번호를 검증한다.
+- ACTIVE와 ON_LEAVE는 로그인·재발급 가능하며, 없는 회원과 RESIGNED는 401이다.
+- Access Token 업무 클레임은 memberId/email/roles이며 tokenType=ACCESS, iat/exp를 포함한다.
+- Refresh Token은 memberId, tokenType=REFRESH, iat/exp 및 무작위 jti를 포함한다.
+  jti는 같은 초에 재발급해도 이전 Refresh Token과 값이 같아지는 문제를 방지한다.
+- HS256 서명, 시간 및 토큰 종류를 검증한다. 서로의 용도로 사용할 수 없다.
+- JWT 필터는 Access Token 전용이며 현재 DB 회원 상태·역할을 매 요청 재조회한다.
+- POST login/refresh에서는 Bearer 헤더를 무시한다. 재발급은 본문의 토큰만 검증한다.
+- SessionCreationPolicy.STATELESS를 유지하며 세션·쿠키 인증은 사용하지 않는다.
 
-1. 로그인 요청의 이메일·비밀번호 검증.
-2. DB Member의 상태·역할을 조회하여 Access Token 발급.
-3. 이후 요청은 Authorization: Bearer <accessToken> 헤더로 전달.
-4. JwtAuthenticationFilter에서 토큰 검증.
-5. memberId로 현재 DB 회원을 재조회하고 퇴사·삭제 여부 확인.
-6. 현재 역할을 ROLE_EMPLOYEE / ROLE_INSTRUCTOR / ROLE_ADMIN 권한으로 변환.
-7. 비밀번호 없는 MemberPrincipal을 SecurityContext에 저장하고 API 접근 판단.
+재발급 처리 순서:
 
-roles/email 클레임은 발급 시점의 정보다. 실제 요청 권한은 DB의 최신 역할을 사용하므로
-이미 발급된 토큰이 있어도 퇴사·ADMIN 제거는 이후 요청에 반영된다.
-이 설계는 매 요청 DB 조회가 필요하며 Redis나 토큰 저장소를 사용하지 않는다.
+1. 요청 검증 및 parseRefreshToken으로 JWT 검증, memberId 추출.
+2. Redis 저장값과 요청 토큰 일치 확인.
+3. 기존 MemberAuthenticationService를 통해 역할 포함 회원 조회 및 퇴사 검증.
+4. MemberPrincipal.from(member)로 최신 DB 이메일·역할을 사용하여 새 토큰 발급.
+5. Redis Lua 스크립트에서 이전 값이 여전히 일치할 때만 새 값과 TTL로 교체.
+6. 교체 성공 시 두 토큰 반환. 경쟁 요청에 패배하면 같은 401 응답.
 
-로그인 요청에서는 오래된 Bearer 헤더를 무시하여 재로그인이 가능하다.
-SessionCreationPolicy.STATELESS를 사용하고 Form Login, HTTP Basic, 기본 Logout,
-Request Cache를 비활성화했다. 세션·쿠키 인증을 사용하지 않는다.
+Access Token은 새로 발급하지만 정보와 발급 초가 동일하면 문자열도 같을 수 있다.
+Refresh Token은 jti 덕분에 항상 새 값으로 회전한다.
 
-## 권한 및 오류
+## Rotation 및 로그아웃
 
-| 경로 | 정책 |
-|---|---|
-| POST /api/auth/login | 인증 없이 허용 |
-| /api/departments 및 하위 경로 | ADMIN |
-| /api/job-positions 및 하위 경로 | ADMIN |
-| /api/members 및 하위 경로 | ADMIN |
-| 그 외 경로 | 차단 |
+Redis 키는 기존 auth:refresh:{memberId}를 유지한다. 회원당 Refresh Token은 하나다.
+로그인 시 기존 값을 덮어쓰므로 다른 기기의 이전 Refresh Token도 사용할 수 없다.
 
-로그인 성공과 관리 API 권한은 별개이므로 EMPLOYEE·INSTRUCTOR도 로그인은 가능하지만
-관리 API 호출은 403이다. ON_LEAVE 회원도 ADMIN 역할이 있으면 관리 API를 사용할 수 있다.
-기존 local-api 무인증 예외는 제거되었다.
+Rotation은 GET 비교와 SET ... EX를 한 Lua 스크립트에서 수행한다.
+delete 후 save하지 않는다. 동시 요청은 한 건만 교체할 수 있으며,
+로그아웃이 먼저 키를 지웠다면 재발급 요청이 키를 복원하지 못한다.
+불일치·재사용 실패 시 현재 유효한 Refresh Token은 삭제하지 않는다.
+원자 실행 보장은 [Redis 공식 문서](https://redis.io/docs/latest/develop/programmability/eval-intro/)를 따른다.
+
+로그아웃은 인증된 MemberPrincipal의 memberId로 해당 Redis 키만 삭제한다.
+Access Token blacklist는 없으므로 기존 Access Token은 만료 전까지 유효할 수 있다.
+이미 로그아웃한 Access Token으로 다시 logout을 호출해도 204를 반환한다.
+회원당 하나의 키이므로 현재 회원의 Refresh Token 전체가 삭제된다.
+Redis 장애는 인증 불일치로 위장하지 않으며 기존 공통 서버 오류(500)로 처리한다.
+
+## 오류 계약
 
 ```json
 {"code":"UNAUTHORIZED","message":"인증이 필요하거나 인증 정보가 유효하지 않습니다.","errors":[]}
 ```
 
-- 400: 로그인 요청 입력 오류
-- 401: 인증 없음, 유효하지 않은 토큰, 로그인 실패. WWW-Authenticate: Bearer 포함
-- 403: 인증된 회원의 권한 부족
+- 400: 누락·빈 Refresh Token 등 요청 검증 실패 또는 잘못된 JSON.
+- 401: JWT 오류·만료·토큰 종류 불일치, Redis 값 없음/불일치/재사용,
+  삭제·퇴사 회원, 미인증 logout. WWW-Authenticate: Bearer 포함.
+- 403: 인증된 회원의 관리 API 권한 부족.
+- 500: 예상하지 못한 서버/인프라 오류.
 
-첫 ADMIN 계정은 기존 관리 절차나 별도 초기 데이터로 준비해야 한다.
-이번 구현에는 공개 회원가입이나 관리자 부트스트랩 API를 추가하지 않았다.
+응답에는 인증 실패의 세부 원인이나 토큰 값을 노출하지 않는다.
+요청/응답 DTO의 toString은 민감값을 REDACTED 처리한다.
+로그인과 재발급 외 공개 회원가입·관리자 초기화 API는 제공하지 않는다.
 
-## 구현 범위와 검증
+## 테스트
 
-새 파일: auth/controller/AuthController, auth/service/AuthService,
-auth/dto/LoginRequest·LoginResponse, global/config/SecurityConfig,
-global/security/JwtProperties·JwtTokenProvider·JwtAuthenticationFilter·MemberPrincipal·
-MemberAuthenticationService·JsonAuthenticationEntryPoint·JsonAccessDeniedHandler.
+일반 회귀 테스트:
 
-수정: pom.xml(JWT 라이브러리), application.yaml(환경변수),
-MemberRepository(역할 포함 인증 조회), GlobalExceptionHandler(로그인 401),
-기존 API 테스트(ADMIN 인증 문맥). MemberService·Entity와 비밀번호 해시는 유지한다.
-삭제: LocalApiSecurityConfig(기존 커밋에서 복구 가능하지만 무인증 우회를 다시 적용하면 안 됨).
+```text
+mvn -Dtest=*Test test
+```
 
-검증 명령: Maven에서 `-Dtest=*Test test`.
-JWT·인증 API·설정 검증과 기존 API/Service 회귀 테스트를 포함한다.
-실제 MySQL 연결 및 전체 애플리케이션 기동 테스트인 BeApplicationTests는 별도 환경이 필요하다.
+JWT 생성·검증, 로그인·재발급·로그아웃 API, Security, Redis 호출 계약 및 기존
+조직/회원 테스트를 포함한다. 일반 테스트에서는 DB와 Redis 저장소를 대체한다.
 
-Refresh Token, Redis 인증, Rotation, refresh/logout API, OAuth2, 비밀번호 찾기,
-Course 기능은 포함하지 않는다.
+실제 테스트용 Redis가 준비된 경우 원자 교체·TTL·동시성 테스트를 명시적으로 실행한다:
 
-라이브러리 참고: [Spring Security JWT SecretKey 검증](https://docs.spring.io/spring-security/reference/7.0/api/java/org/springframework/security/oauth2/jwt/NimbusJwtDecoder.SecretKeyJwtDecoderBuilder.html).
+```text
+mvn -Dtest=RefreshTokenRedisIntegrationTest -Dredis.integration-test=true test
+```
+
+기본 localhost:6379이며 redis.test.host / redis.test.port로 변경할 수 있다.
+인증 없는 개발용 Redis를 대상으로 하며 실제 양수 회원 ID와 겹치지 않는
+임의 음수 ID 키만 사용한다. 해당 임시 키만 정리하며 FLUSHDB는 사용하지 않는다.
+활성화 옵션이 없으면 이 통합 테스트는 건너뛴다.
+전체 앱 기동 BeApplicationTests 및 실제 MySQL 검증은 별도 환경이 필요하다.
+
+기존 Entity·조직/회원 Service·DB 설계는 변경하지 않았다.
+Access blacklist, 멀티 디바이스, RedisHash, DB 토큰 테이블, OAuth2, 회원가입,
+비밀번호 찾기, MFA 및 Course/Frontend/Mobile 기능은 범위에 포함하지 않는다.

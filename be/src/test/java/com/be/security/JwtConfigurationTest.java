@@ -12,7 +12,8 @@ import static org.assertj.core.api.Assertions.*;
 // Secret과 만료 시간의 필수 설정 및 기동 시 검증
 class JwtConfigurationTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
-            .withUserConfiguration(ConfigurationForTest.class);
+            .withUserConfiguration(ConfigurationForTest.class)
+            .withPropertyValues("jwt.refresh-token-ttl-seconds=3600");
 
     @Test
     void startsWithValidSettings() {
@@ -40,6 +41,15 @@ class JwtConfigurationTest {
     void refusesWeakSecret() {
         runner.withPropertyValues("jwt.secret=c2hvcnQ=", "jwt.access-token-ttl-seconds=300")
                 .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    void refusesMissingOrNonPositiveRefreshExpiration() {
+        for (String ttl : new String[] {"", "0", "-1"}) {
+            runner.withPropertyValues("jwt.secret=" + JwtTestSupport.secret(),
+                    "jwt.access-token-ttl-seconds=300", "jwt.refresh-token-ttl-seconds=" + ttl)
+                    .run(context -> assertThat(context).hasFailed());
+        }
     }
 
     @Configuration(proxyBeanMethods = false)

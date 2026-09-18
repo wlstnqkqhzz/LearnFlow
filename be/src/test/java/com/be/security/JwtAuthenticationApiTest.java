@@ -36,7 +36,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// 실제 로그인 Service·JWT·Security 필터를 함께 검증 (DB만 Mock)
+// 실제 로그인 Service·JWT·Security 필터를 함께 검증 (DB 및 Redis 저장 서비스는 Mock)
 // 과거 local-api 프로필을 켜도 무인증 관리 API 접근이 허용되지 않아야 함
 @WebMvcTest({AuthController.class, MemberController.class, DepartmentController.class, JobPositionController.class})
 @Import({SecurityConfig.class, MemberSupportConfig.class, AuthService.class,
@@ -48,6 +48,7 @@ class JwtAuthenticationApiTest {
     @Autowired JwtTokenProvider tokens;
     @Autowired ObjectMapper mapper;
     @MockitoBean MemberRepository repository;
+    @MockitoBean com.be.auth.service.RefreshTokenService refreshTokens;
     @MockitoBean MemberService members;
     @MockitoBean DepartmentService departments;
     @MockitoBean JobPositionService positions;
@@ -57,6 +58,7 @@ class JwtAuthenticationApiTest {
     static void jwtProperties(DynamicPropertyRegistry registry) {
         registry.add("jwt.secret", JwtTestSupport::secret);
         registry.add("jwt.access-token-ttl-seconds", () -> 300);
+        registry.add("jwt.refresh-token-ttl-seconds", () -> 3600);
     }
 
     @BeforeEach
@@ -77,11 +79,14 @@ class JwtAuthenticationApiTest {
         var response = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\" USER@Example.COM \",\"password\":\"password123!\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresIn").value(300))
+                .andExpect(jsonPath("$.accessTokenExpiresInSeconds").value(300))
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.refreshToken").doesNotExist()).andReturn();
-        String token = mapper.readTree(response.getResponse().getContentAsString()).get("accessToken").asText();
-        assertThat(tokens.parse(token).memberId()).isEqualTo(1L);
+                .andExpect(jsonPath("$.refreshToken").isString()).andReturn();
+        String token = mapper.readTree(response.getResponse().getContentAsString()).get("accessToken").asString();
+        assertThat(tokens.parseAccessToken(token).memberId()).isEqualTo(1L);
+        String refreshToken = mapper.readTree(response.getResponse().getContentAsString()).get("refreshToken").asString();
+        assertThat(tokens.parseRefreshToken(refreshToken)).isEqualTo(1L);
+        verify(refreshTokens).save(1L, refreshToken, 3600);
         assertThat(response.getRequest().getSession(false)).isNull();
         assertThat(response.getResponse().getHeader("Set-Cookie")).isNull();
     }
@@ -184,7 +189,7 @@ class JwtAuthenticationApiTest {
 
     @Test
     void expiredTokenReturns401() throws Exception {
-        var oldProvider = new JwtTokenProvider(new JwtProperties(JwtTestSupport.secret(), 1),
+        var oldProvider = new JwtTokenProvider(new JwtProperties(JwtTestSupport.secret(), 1, 3600),
                 Clock.fixed(Instant.now().minusSeconds(60), ZoneOffset.UTC));
         String token = oldProvider.createAccessToken(MemberPrincipal.from(member));
         mvc.perform(get("/api/members/1").header("Authorization", "Bearer " + token))

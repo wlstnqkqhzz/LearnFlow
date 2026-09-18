@@ -48,6 +48,7 @@ class OrganizationMemberApiTest {
     static void jwtProperties(DynamicPropertyRegistry registry) {
         registry.add("jwt.secret", JwtTestSupport::secret);
         registry.add("jwt.access-token-ttl-seconds", () -> 300);
+        registry.add("jwt.refresh-token-ttl-seconds", () -> 3600);
     }
     @Autowired MockMvc mvc;
     @MockitoBean DepartmentService departments;

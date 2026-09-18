@@ -26,9 +26,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        // 만료된 토큰을 가진 클라이언트도 로그인은 다시 시도할 수 있음
+        // 만료된 Access Token이 있어도 로그인 및 본문의 Refresh Token 검증 가능
         return "POST".equals(request.getMethod())
-                && (request.getContextPath() + "/api/auth/login").equals(request.getRequestURI());
+                && ((request.getContextPath() + "/api/auth/login").equals(request.getRequestURI())
+                || (request.getContextPath() + "/api/auth/refresh").equals(request.getRequestURI()));
     }
 
     @Override

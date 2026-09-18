@@ -11,6 +11,7 @@ import org.springframework.validation.annotation.Validated;
 public record JwtProperties(@NotBlank String secret, @Min(1) long accessTokenTtlSeconds, @Min(1) long refreshTokenTtlSeconds) {
     @Override
     public String toString() {
-        return "JwtProperties[secret=REDACTED, accessTokenTtlSeconds=" + accessTokenTtlSeconds + refreshTokenTtlSeconds + "]";
+        return "JwtProperties[secret=REDACTED, accessTokenTtlSeconds=" + accessTokenTtlSeconds
+                + ", refreshTokenTtlSeconds=" + refreshTokenTtlSeconds + "]";
     }
 }

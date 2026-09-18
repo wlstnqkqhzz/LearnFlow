@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -41,7 +42,7 @@ public class JwtTokenProvider {
         } catch (IllegalArgumentException | NullPointerException exception) {
             throw new IllegalArgumentException("JWT_SECRET은 유효한 Base64 키여야 합니다.");
         }
-        if (key.length < 32 || properties.accessTokenTtlSeconds() <= 0) {
+        if (key.length < 32 || properties.accessTokenTtlSeconds() <= 0 || properties.refreshTokenTtlSeconds() <= 0) {
             throw new IllegalArgumentException("JWT 키는 최소 32바이트, 만료 시간은 양수여야 합니다.");
         }
         // HS256 서명에 사용할 SecretKey 생성
@@ -69,6 +70,7 @@ public class JwtTokenProvider {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(properties.accessTokenTtlSeconds()))
+                .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE)
                 .claim("memberId", principal.memberId())
                 .claim("email", principal.email())
                 .claim("roles", principal.roles().stream().map(Role::name).sorted().toList())
@@ -88,6 +90,8 @@ public class JwtTokenProvider {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(properties.refreshTokenTtlSeconds()))
+                // 같은 초에도 다른 토큰을 발급하여 회전된 이전 토큰 재사용 차단
+                .id(UUID.randomUUID().toString())
                 .claim(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE)
                 .claim("memberId", memberId)
                 .build();
