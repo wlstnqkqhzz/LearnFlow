@@ -1,6 +1,8 @@
 package com.be.member.entity;
 
 import com.be.global.entity.BaseTimeEntity;
+import com.be.global.exception.BusinessException;
+import com.be.global.exception.ErrorCode;
 import com.be.member.enums.MemberStatus;
 import com.be.member.enums.Role;
 import com.be.organization.entity.Department;
@@ -11,6 +13,8 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Locale;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -110,5 +114,91 @@ public class Member extends BaseTimeEntity {
     // 외부에서 역할 목록을 직접 수정하지 못하도록 읽기 전용 뷰 반환
     public Set<Role> getRoles() {
         return Collections.unmodifiableSet(roles);
+    }
+
+    // 해시 처리된 비밀번호로만 회원 생성 - EMPLOYEE 역할은 필드 기본값으로 유지
+    public static Member create(String employeeNumber, String email, String passwordHash,
+                                String name, Department department, JobPosition jobPosition,
+                                LocalDate hireDate) {
+        Member member = new Member();
+        member.employeeNumber = employeeNumber.trim();
+        member.passwordHash = Objects.requireNonNull(passwordHash);
+        member.updateProfile(email, name, hireDate);
+        member.changeDepartment(department);
+        member.changeJobPosition(jobPosition);
+        return member;
+    }
+
+    // 이메일은 검증 및 저장 전에 동일한 방식으로 정규화
+    public static String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    // 사번과 비밀번호를 제외한 일반 정보 변경
+    public void updateProfile(String email, String name, LocalDate hireDate) {
+        ensureEditable();
+        this.email = normalizeEmail(email);
+        this.name = name.trim();
+        this.hireDate = Objects.requireNonNull(hireDate);
+    }
+
+    // 신규 소속 지정은 활성 부서만 허용
+    public void changeDepartment(Department department) {
+        ensureEditable();
+        Objects.requireNonNull(department);
+        if (this.department != null && (this.department == department
+                || (department.getId() != null && department.getId().equals(this.department.getId())))) {
+            return;
+        }
+        if (!department.isActive()) {
+            throw new BusinessException(ErrorCode.INACTIVE_DEPARTMENT);
+        }
+        this.department = department;
+    }
+
+    // 신규 직무 지정은 활성 직무만 허용
+    public void changeJobPosition(JobPosition jobPosition) {
+        ensureEditable();
+        Objects.requireNonNull(jobPosition);
+        if (this.jobPosition != null && (this.jobPosition == jobPosition
+                || (jobPosition.getId() != null && jobPosition.getId().equals(this.jobPosition.getId())))) {
+            return;
+        }
+        if (!jobPosition.isActive()) {
+            throw new BusinessException(ErrorCode.INACTIVE_JOB_POSITION);
+        }
+        this.jobPosition = jobPosition;
+    }
+
+    // 퇴사자는 일반 정보를 수정할 수 없음
+    public void ensureEditable() {
+        if (status == MemberStatus.RESIGNED) {
+            throw new BusinessException(ErrorCode.RESIGNED_MEMBER_UPDATE);
+        }
+    }
+
+    // 허용된 재직 상태 전이만 적용하고 퇴사 시각은 UTC로 전달받음
+    public void changeStatus(MemberStatus nextStatus, LocalDateTime nowUtc) {
+        Objects.requireNonNull(nextStatus);
+        if (status == MemberStatus.RESIGNED || status == nextStatus) {
+            throw new BusinessException(ErrorCode.INVALID_MEMBER_STATUS_TRANSITION);
+        }
+        LocalDateTime nextResignedAt = nextStatus == MemberStatus.RESIGNED
+                ? Objects.requireNonNull(nowUtc) : null;
+        status = nextStatus;
+        resignedAt = nextResignedAt;
+    }
+
+    // 추가 역할은 Set으로 중복 방지
+    public void addRole(Role role) {
+        roles.add(Objects.requireNonNull(role));
+    }
+
+    // 기본 직원 역할은 항상 유지
+    public void removeRole(Role role) {
+        if (Objects.requireNonNull(role) == Role.EMPLOYEE) {
+            throw new BusinessException(ErrorCode.REQUIRED_EMPLOYEE_ROLE);
+        }
+        roles.remove(role);
     }
 }

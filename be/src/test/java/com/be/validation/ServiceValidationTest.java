@@ -1,0 +1,91 @@
+package com.be.validation;
+
+import com.be.member.dto.*;
+import com.be.member.service.MemberService;
+import com.be.member.repository.MemberRepository;
+import com.be.organization.dto.*;
+import com.be.organization.repository.*;
+import com.be.organization.service.*;
+import jakarta.validation.*;
+import java.time.Clock;
+import java.time.LocalDate;
+import org.junit.jupiter.api.*;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.beanvalidation.MethodValidationInterceptor;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+// Controller 없이도 Service 경계에서 Jakarta Validation이 적용되는지 검증
+class ServiceValidationTest {
+    private ValidatorFactory factory;
+
+    @BeforeEach
+    void setUp() {
+        factory = Validation.buildDefaultValidatorFactory();
+    }
+
+    @AfterEach
+    void close() {
+        factory.close();
+    }
+
+    @Test
+    void rejectsInvalidDepartmentInputBeforeRepositoryAccess() {
+        DepartmentRepository repository = mock(DepartmentRepository.class);
+        DepartmentService service = validated(new DepartmentService(repository));
+        assertThatThrownBy(() -> service.create(new DepartmentCreateRequest(" ", "개발", null)))
+                .isInstanceOf(ConstraintViolationException.class);
+        assertThatThrownBy(() -> service.update(0L, new DepartmentUpdateRequest("개발", null)))
+                .isInstanceOf(ConstraintViolationException.class);
+        assertThatThrownBy(() -> service.create(null))
+                .isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void rejectsInvalidJobPositionInput() {
+        JobPositionRepository repository = mock(JobPositionRepository.class);
+        JobPositionService service = validated(new JobPositionService(repository));
+        assertThatThrownBy(() -> service.create(new JobPositionCreateRequest("A".repeat(51), "직무")))
+                .isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void rejectsInvalidMemberInputBeforeRepositoryAccess() {
+        MemberRepository repository = mock(MemberRepository.class);
+        MemberService service = validated(new MemberService(repository,
+                mock(DepartmentRepository.class), mock(JobPositionRepository.class),
+                mock(PasswordEncoder.class), Clock.systemUTC()));
+        assertThatThrownBy(() -> service.create(new MemberCreateRequest(
+                "E001", "invalid-email", "short", "직원", null, -1L, null)))
+                .isInstanceOf(ConstraintViolationException.class);
+        assertThatThrownBy(() -> service.changeStatus(1L, new MemberStatusUpdateRequest(null)))
+                .isInstanceOf(ConstraintViolationException.class);
+        assertThatThrownBy(() -> service.addRole(1L, new MemberRoleUpdateRequest(null)))
+                .isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void acceptsTrimmedEmailAndRejectsOversizedOrBlankFields() {
+        var request = new MemberCreateRequest(" E001 ", " USER@Example.COM ", "password123!",
+                " 직원 ", 1L, 2L, LocalDate.of(2026, 9, 18));
+        assertThat(factory.getValidator().validate(request)).isEmpty();
+        assertThat(request.email()).isEqualTo("user@example.com");
+        assertThat(factory.getValidator().validate(new MemberUpdateRequest(
+                "user@example.com", " ", LocalDate.now()))).isNotEmpty();
+        assertThat(factory.getValidator().validate(new JobPositionUpdateRequest("A".repeat(101))))
+                .isNotEmpty();
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T validated(T target) {
+        ProxyFactory proxy = new ProxyFactory(target);
+        proxy.setProxyTargetClass(true);
+        proxy.addAdvice(new MethodValidationInterceptor(factory.getValidator()));
+        return (T) proxy.getProxy();
+    }
+}
