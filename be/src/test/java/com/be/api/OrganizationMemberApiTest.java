@@ -1,6 +1,9 @@
 package com.be.api;
 
-import com.be.global.config.LocalApiSecurityConfig;
+import com.be.global.config.SecurityConfig;
+import com.be.global.security.JwtTokenProvider;
+import com.be.global.security.MemberAuthenticationService;
+import com.be.security.JwtTestSupport;
 import com.be.global.exception.*;
 import com.be.member.controller.MemberController;
 import com.be.member.dto.*;
@@ -21,7 +24,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.*;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,11 +36,19 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// 로컬 프로필의 실제 MVC·Validation·Security 필터를 통과하는 HTTP 계약 테스트
+// ADMIN 인증 문맥에서 기존 MVC 계약 검증 (실제 JWT 흐름은 별도 테스트)
 @WebMvcTest({DepartmentController.class, JobPositionController.class, MemberController.class})
-@Import({GlobalExceptionHandler.class, LocalApiSecurityConfig.class})
-@ActiveProfiles("local-api")
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
+@WithMockUser(roles = "ADMIN")
 class OrganizationMemberApiTest {
+    @MockitoBean JwtTokenProvider tokens;
+    @MockitoBean MemberAuthenticationService authenticatedMembers;
+
+    @DynamicPropertySource
+    static void jwtProperties(DynamicPropertyRegistry registry) {
+        registry.add("jwt.secret", JwtTestSupport::secret);
+        registry.add("jwt.access-token-ttl-seconds", () -> 300);
+    }
     @Autowired MockMvc mvc;
     @MockitoBean DepartmentService departments;
     @MockitoBean JobPositionService positions;
@@ -307,7 +320,7 @@ class OrganizationMemberApiTest {
     }
 
     @Test
-    void doesNotExposeOtherPathsThroughLocalProfile() throws Exception {
+    void doesNotExposeOtherPathsToAdmin() throws Exception {
         mvc.perform(get("/actuator/env")).andExpect(status().is4xxClientError());
     }
 

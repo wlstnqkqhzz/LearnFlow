@@ -7,7 +7,7 @@
 - 공통 응답: ActivationUpdateRequest, ApiErrorResponse, PageResponse
 - 요청 DTO: DepartmentPatchRequest, MemberPatchRequest, MemberSearchRequest
 - 예외 처리: GlobalExceptionHandler
-- 로컬 실행 설정: LocalApiSecurityConfig
+- 보안 설정: SecurityConfig (Access Token 기반, 조직·회원 API는 ADMIN 전용)
 - 기존 코드 확장: DepartmentService.patch, MemberService.patch/search, MemberRepository.search
 - 테스트: OrganizationMemberApiTest, ApiServiceExtensionTest
 
@@ -16,10 +16,10 @@ DTO 5개는 이전 커밋에서 복구했고, 부분 수정·검색 메서드는
 
 ## 실행 범위
 
-DB 연결 설정은 별도로 필요하다. JWT, 로그인, 역할별 인가, 자동 교육 배정은 구현하지 않았다.
-로컬 API 확인 시 `local-api` 프로필을 활성화한다.
-이 프로필은 아래 세 API 경로만 무인증으로 허용하므로 개발 환경에서만 사용한다.
-기본 프로필에서는 Spring Security의 기존 보호 설정을 유지한다.
+DB 연결 설정은 별도로 필요하다. JWT 로그인과 ADMIN 접근 제한이 적용되어 있다.
+인증 환경변수와 로그인 예시는 [AUTH.md](AUTH.md)를 참고한다.
+기존 local-api 무인증 프로필은 제거되었으며 모든 프로필에서 동일한 인증 정책을 적용한다.
+자동 교육 배정은 아직 구현하지 않았다.
 
 ## Endpoint
 
@@ -90,6 +90,8 @@ errors는 항상 배열이며 필드 오류가 없으면 빈 배열이다.
 
 | HTTP | 대상 |
 |---|---|
+| 401 | 토큰 누락·오류·만료, 로그인 실패, 퇴사 또는 삭제된 회원 |
+| 403 | 인증되었으나 ADMIN 권한 없음 |
 | 400 | 입력 검증, 잘못된 JSON/Enum/경로 값, 부서 순환·자기 참조, EMPLOYEE 제거 |
 | 404 | 부서·직무·회원 없음 |
 | 409 | 중복 데이터, 비활성 조직 지정, 허용되지 않은 상태 전이, 퇴사자 정보 수정 |

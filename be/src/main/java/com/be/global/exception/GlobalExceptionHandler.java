@@ -17,6 +17,14 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+    // 로그인 실패도 필터의 401과 동일한 오류 계약 사용
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<Object> handleAuthentication(org.springframework.security.core.AuthenticationException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
+                .body(ApiErrorResponse.of("UNAUTHORIZED", "인증이 필요하거나 인증 정보가 유효하지 않습니다."));
+    }
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Object> handleBusiness(BusinessException exception) {
         ErrorCode code = exception.getErrorCode();
