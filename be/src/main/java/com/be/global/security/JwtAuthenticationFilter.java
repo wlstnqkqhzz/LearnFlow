@@ -45,7 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (!header.regionMatches(true, 0, "Bearer ", 0, 7) || header.substring(7).isBlank()) {
                     throw new BadCredentialsException("잘못된 인증 헤더입니다.");
                 }
-                MemberPrincipal claims = tokens.parse(header.substring(7));
+                MemberPrincipal claims = tokens.parseAccessToken(header.substring(7));
                 MemberPrincipal principal = members.load(claims.memberId());
                 var authentication = UsernamePasswordAuthenticationToken.authenticated(
                         principal, null, principal.authorities());
