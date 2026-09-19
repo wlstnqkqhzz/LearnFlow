@@ -58,7 +58,7 @@ class ServiceValidationTest {
         MemberRepository repository = mock(MemberRepository.class);
         MemberService service = validated(new MemberService(repository,
                 mock(DepartmentRepository.class), mock(JobPositionRepository.class),
-                mock(PasswordEncoder.class), Clock.systemUTC()));
+                mock(PasswordEncoder.class), Clock.systemUTC(), mock(com.be.assignment.service.AutoAssignmentService.class)));
         assertThatThrownBy(() -> service.create(new MemberCreateRequest(
                 "E001", "invalid-email", "short", "직원", null, -1L, null)))
                 .isInstanceOf(ConstraintViolationException.class);
@@ -85,7 +85,8 @@ class ServiceValidationTest {
     void validatesCourseServiceBoundary() {
         var courses = mock(com.be.course.repository.CourseRepository.class);
         var members = mock(MemberRepository.class);
-        var service = validated(new com.be.course.service.CourseService(courses, members));
+        var service = validated(new com.be.course.service.CourseService(courses, members,
+                mock(com.be.assignment.service.AutoAssignmentService.class)));
         assertThatThrownBy(() -> service.create(new com.be.course.dto.CourseCreateRequest(
                 " ", null, null, null, null, new java.math.BigDecimal("100.001"), 0L)))
                 .isInstanceOf(ConstraintViolationException.class);
@@ -105,6 +106,26 @@ class ServiceValidationTest {
                 new com.be.course.dto.ContentOrderRequest(java.util.Arrays.asList(1L, null))))
                 .isInstanceOf(ConstraintViolationException.class);
         verifyNoInteractions(courses, contents);
+    }
+
+    @Test
+    void validatesAssignmentRuleAndEnrollmentServiceRequests() {
+        var rules = mock(com.be.assignment.repository.AssignmentRuleRepository.class);
+        var courses = mock(com.be.course.repository.CourseRepository.class);
+        var service = validated(new com.be.assignment.service.AssignmentRuleService(rules, courses,
+                mock(DepartmentRepository.class), mock(JobPositionRepository.class),
+                mock(com.be.assignment.service.AutoAssignmentService.class)));
+        assertThatThrownBy(() -> service.create(1L, new com.be.assignment.dto.AssignmentRuleCreateRequest(
+                com.be.assignment.enums.AssignmentRuleType.NEW_EMPLOYEE, null, null, 0, true)))
+                .isInstanceOf(ConstraintViolationException.class);
+        assertThatThrownBy(() -> service.changeStatus(1L, 1L, new com.be.assignment.dto.AssignmentRuleStatusRequest(null)))
+                .isInstanceOf(ConstraintViolationException.class);
+        var enrollments = mock(com.be.enrollment.repository.EnrollmentRepository.class);
+        var enrollmentService = validated(new com.be.enrollment.service.EnrollmentService(enrollments, courses,
+                mock(MemberRepository.class), Clock.systemUTC()));
+        assertThatThrownBy(() -> enrollmentService.assignManually(1L, new com.be.enrollment.dto.ManualEnrollmentRequest(null)))
+                .isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(rules, courses, enrollments);
     }
 
     @SuppressWarnings("unchecked")

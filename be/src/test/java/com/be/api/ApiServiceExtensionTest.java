@@ -39,7 +39,7 @@ class ApiServiceExtensionTest {
         members = mock(MemberRepository.class);
         departments = mock(DepartmentRepository.class);
         service = new MemberService(members, departments, mock(JobPositionRepository.class),
-                mock(PasswordEncoder.class), Clock.systemUTC());
+                mock(PasswordEncoder.class), Clock.systemUTC(), mock(com.be.assignment.service.AutoAssignmentService.class));
         departmentService = new DepartmentService(departments);
         parent = Department.create("ROOT", "상위 부서", null);
         child = Department.create("DEV", "개발팀", parent);

@@ -40,6 +40,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
+                        // 관리 하위 경로는 기존 Course GET(INSTRUCTOR 허용)보다 먼저 제한
+                        .requestMatchers("/api/courses/*/assignment-rules", "/api/courses/*/assignment-rules/**",
+                                "/api/courses/*/enrollments", "/api/courses/*/enrollments/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/enrollments/me").hasRole("EMPLOYEE")
+                        .requestMatchers("/api/enrollments", "/api/enrollments/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/courses", "/api/courses/**")
                         .hasAnyRole("ADMIN", "INSTRUCTOR")
                         .requestMatchers("/api/courses", "/api/courses/**").hasRole("ADMIN")

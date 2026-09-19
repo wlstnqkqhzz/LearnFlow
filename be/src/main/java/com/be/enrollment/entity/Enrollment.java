@@ -108,4 +108,27 @@ public class Enrollment extends BaseTimeEntity {
     @ColumnDefault("0")
     @Column(name = "version", nullable = false)
     private Long version = 0L;
+
+    // 수동 배정: 자동 규칙 참조 없이 ASSIGNED로 생성
+    public static Enrollment manual(Member member, Course course, LocalDateTime assignedAt) {
+        return assigned(member, course, AssignmentSource.MANUAL, null, assignedAt);
+    }
+
+    // 자동 배정: 최초 배정 규칙을 보존
+    public static Enrollment automatic(Member member, AssignmentRule rule, LocalDateTime assignedAt) {
+        java.util.Objects.requireNonNull(rule);
+        return assigned(member, rule.getCourse(), AssignmentSource.AUTOMATIC, rule, assignedAt);
+    }
+
+    private static Enrollment assigned(Member member, Course course, AssignmentSource source,
+                                       AssignmentRule rule, LocalDateTime assignedAt) {
+        Enrollment enrollment = new Enrollment();
+        enrollment.member = java.util.Objects.requireNonNull(member);
+        enrollment.course = java.util.Objects.requireNonNull(course);
+        enrollment.assignmentSource = source;
+        enrollment.assignmentRule = rule;
+        enrollment.assignedAt = java.util.Objects.requireNonNull(assignedAt);
+        enrollment.dueDate = java.util.Objects.requireNonNull(course.getEndDate());
+        return enrollment;
+    }
 }

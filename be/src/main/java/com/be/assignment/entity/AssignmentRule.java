@@ -74,4 +74,27 @@ public class AssignmentRule extends BaseTimeEntity {
     @ColumnDefault("true")
     @Column(name = "is_active", nullable = false, columnDefinition = "boolean")
     private boolean isActive = true;
+
+    // Service에서 검증한 조건으로 규칙 생성 (소속 과정은 이후 변경 불가)
+    public static AssignmentRule create(Course course, AssignmentRuleType type, Department department,
+                                        JobPosition position, Short days, boolean active) {
+        AssignmentRule rule = new AssignmentRule();
+        rule.course = course;
+        rule.updateTarget(type, department, position, days);
+        rule.changeActive(active);
+        return rule;
+    }
+
+    // 기존 Enrollment의 최초 규칙 참조는 그대로 두고 향후 배정 조건만 변경
+    public void updateTarget(AssignmentRuleType type, Department department, JobPosition position, Short days) {
+        this.ruleType = type;
+        this.department = department;
+        this.jobPosition = position;
+        this.newEmployeeDays = days;
+    }
+
+    // 비활성화해도 기존 배정은 취소하지 않음
+    public void changeActive(boolean active) {
+        this.isActive = active;
+    }
 }

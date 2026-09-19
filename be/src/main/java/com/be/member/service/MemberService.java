@@ -1,5 +1,6 @@
 package com.be.member.service;
 
+import com.be.assignment.service.AutoAssignmentService;
 import com.be.global.exception.*;
 import com.be.member.dto.*;
 import com.be.member.entity.Member;
@@ -23,7 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-// 직원 등록, 정보·상태·역할 변경 관리 (자동 교육 배정은 후속 단계에서 연결)
+// 직원 등록, 정보·상태·역할 변경 관리 및 지정된 변경의 자동 배정 연동
 @Service
 @Validated
 @RequiredArgsConstructor
@@ -34,6 +35,8 @@ public class MemberService {
     private final JobPositionRepository jobPositionRepository;
     private final PasswordEncoder passwordEncoder;
     private final Clock clock;
+    // 생성·소속·입사일 변경만 평가하며 상태/역할 변경에는 연결하지 않음
+    private final AutoAssignmentService autoAssignment;
 
     @Transactional
     public MemberResponse create(@NotNull @Valid MemberCreateRequest request) {
@@ -58,6 +61,8 @@ public class MemberService {
         } catch (DataIntegrityViolationException exception) {
             throw UniqueConstraintErrors.translate(exception);
         }
+        // 생성된 ID 및 최신 소속으로 평가; 실패하면 회원 생성도 롤백
+        autoAssignment.assignMember(member);
         return MemberResponse.from(member);
     }
 
@@ -69,8 +74,11 @@ public class MemberService {
         if (memberRepository.existsByEmailAndIdNot(request.email(), id)) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
         }
+        boolean hireDateChanged = !member.getHireDate().equals(request.hireDate());
         member.updateProfile(request.email(), request.name(), request.hireDate());
-        return flushAndRespond(member);
+        MemberResponse response = flushAndRespond(member);
+        if (hireDateChanged) autoAssignment.assignMember(member);
+        return response;
     }
 
     @Transactional
@@ -79,7 +87,9 @@ public class MemberService {
         Member member = findForUpdate(id);
         member.ensureEditable();
         member.changeDepartment(findDepartment(request.departmentId()));
-        return flushAndRespond(member);
+        MemberResponse response = flushAndRespond(member);
+        autoAssignment.assignMember(member);
+        return response;
     }
 
     @Transactional
@@ -88,7 +98,9 @@ public class MemberService {
         Member member = findForUpdate(id);
         member.ensureEditable();
         member.changeJobPosition(findJobPosition(request.jobPositionId()));
-        return flushAndRespond(member);
+        MemberResponse response = flushAndRespond(member);
+        autoAssignment.assignMember(member);
+        return response;
     }
 
     @Transactional
@@ -129,10 +141,13 @@ public class MemberService {
         if (memberRepository.existsByEmailAndIdNot(email, id)) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
         }
+        boolean hireDateChanged = request.getHireDate() != null && !request.getHireDate().equals(member.getHireDate());
         member.updateProfile(email,
                 request.getName() == null ? member.getName() : request.getName(),
                 request.getHireDate() == null ? member.getHireDate() : request.getHireDate());
-        return flushAndRespond(member);
+        MemberResponse response = flushAndRespond(member);
+        if (hireDateChanged) autoAssignment.assignMember(member);
+        return response;
     }
 
     // 단순 조건 검색과 안정적인 ID 정렬로 직원 페이지 조회

@@ -29,12 +29,13 @@ import static org.mockito.Mockito.*;
 class CourseServiceTest {
     @Mock CourseRepository courses;
     @Mock MemberRepository members;
+    @Mock com.be.assignment.service.AutoAssignmentService autoAssignment;
     CourseService service;
     final LocalDate start = LocalDate.of(2026, 9, 1);
     final LocalDate end = start.plusDays(30);
 
     @BeforeEach
-    void setUp() { service = new CourseService(courses, members); }
+    void setUp() { service = new CourseService(courses, members, autoAssignment); }
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
@@ -81,6 +82,7 @@ class CourseServiceTest {
         lock(course);
         assertThat(service.changeStatus(1L, new CourseStatusRequest(CourseStatus.OPEN)).status())
                 .isEqualTo(CourseStatus.OPEN);
+        verify(autoAssignment).assignCourse(1L);
     }
 
     @ParameterizedTest

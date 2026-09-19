@@ -71,6 +71,14 @@ class EntityMappingTest {
                             assertThat(session.createSelectionQuery(query.value(), Course.class)).isNotNull();
                         }
                     }
+                    for (Class<?> repository : List.of(com.be.assignment.repository.AssignmentRuleRepository.class,
+                            com.be.enrollment.repository.EnrollmentRepository.class,
+                            com.be.member.repository.MemberRepository.class)) {
+                        for (var method : repository.getDeclaredMethods()) {
+                            var query = method.getAnnotation(org.springframework.data.jpa.repository.Query.class);
+                            if (query != null) assertThat(session.createSelectionQuery(query.value(), Object.class)).isNotNull();
+                        }
+                    }
                 }
             }
 

@@ -30,6 +30,7 @@ class MemberServiceTest {
     @Mock DepartmentRepository departments;
     @Mock JobPositionRepository positions;
     @Mock PasswordEncoder encoder;
+    @Mock com.be.assignment.service.AutoAssignmentService autoAssignment;
     MemberService service;
     Department department;
     JobPosition position;
@@ -39,7 +40,7 @@ class MemberServiceTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(Instant.parse("2026-09-18T01:00:00Z"), ZoneId.of("Asia/Seoul"));
-        service = new MemberService(members, departments, positions, encoder, clock);
+        service = new MemberService(members, departments, positions, encoder, clock, autoAssignment);
         department = Department.create("DEV", "개발팀", null);
         position = JobPosition.create("BACKEND", "개발자");
         ReflectionTestUtils.setField(department, "id", 1L);
@@ -53,6 +54,7 @@ class MemberServiceTest {
         MemberResponse response = service.create(request());
         ArgumentCaptor<Member> captured = ArgumentCaptor.forClass(Member.class);
         verify(members).saveAndFlush(captured.capture());
+        verify(autoAssignment).assignMember(captured.getValue());
         assertThat(captured.getValue().getPasswordHash()).isEqualTo("encoded-password");
         assertThat(captured.getValue().getPasswordHash()).isNotEqualTo("password123!");
         assertThat(response.roles()).containsExactly(Role.EMPLOYEE);

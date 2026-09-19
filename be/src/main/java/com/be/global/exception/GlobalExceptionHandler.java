@@ -30,15 +30,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorCode code = exception.getErrorCode();
         HttpStatus status = switch (code) {
             case DEPARTMENT_NOT_FOUND, JOB_POSITION_NOT_FOUND, MEMBER_NOT_FOUND,
-                    COURSE_NOT_FOUND, COURSE_CONTENT_NOT_FOUND -> HttpStatus.NOT_FOUND;
+                    COURSE_NOT_FOUND, COURSE_CONTENT_NOT_FOUND, ASSIGNMENT_RULE_NOT_FOUND,
+                    ENROLLMENT_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case DUPLICATE_DEPARTMENT_CODE, DUPLICATE_JOB_POSITION_CODE,
                     DUPLICATE_EMPLOYEE_NUMBER, DUPLICATE_EMAIL,
                     INACTIVE_DEPARTMENT, INACTIVE_JOB_POSITION,
                     INVALID_MEMBER_STATUS_TRANSITION, RESIGNED_MEMBER_UPDATE,
-                    INVALID_COURSE_STATUS_TRANSITION, DUPLICATE_CONTENT_SORT_ORDER -> HttpStatus.CONFLICT;
+                    INVALID_COURSE_STATUS_TRANSITION, DUPLICATE_CONTENT_SORT_ORDER,
+                    DUPLICATE_ENROLLMENT, COURSE_NOT_OPEN_FOR_ASSIGNMENT,
+                    RESIGNED_MEMBER_ASSIGNMENT -> HttpStatus.CONFLICT;
             case SELF_PARENT_DEPARTMENT, DEPARTMENT_CYCLE, REQUIRED_EMPLOYEE_ROLE,
                     INVALID_COURSE_INSTRUCTOR, INVALID_COURSE_PERIOD, COURSE_DATES_REQUIRED,
-                    INVALID_CONTENT_ORDER, CONTENT_ORDER_LIMIT_EXCEEDED -> HttpStatus.BAD_REQUEST;
+                    INVALID_CONTENT_ORDER, CONTENT_ORDER_LIMIT_EXCEEDED, INVALID_ASSIGNMENT_RULE_TARGET,
+                    INVALID_NEW_EMPLOYEE_DAYS -> HttpStatus.BAD_REQUEST;
         };
         return ResponseEntity.status(status).body(ApiErrorResponse.of(code.name(), code.getMessage()));
     }
@@ -104,5 +108,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.error("예상하지 못한 API 오류", exception);
         return ResponseEntity.internalServerError()
                 .body(ApiErrorResponse.of("INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다."));
+    }
+
+    // 동시 회원/과정 변경의 잠금 경합은 전체 트랜잭션 롤백 후 재시도 가능한 충돌로 반환
+    @ExceptionHandler(org.springframework.dao.ConcurrencyFailureException.class)
+    public ResponseEntity<Object> handleConcurrency(org.springframework.dao.ConcurrencyFailureException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiErrorResponse.of("CONCURRENT_MODIFICATION", "동시 변경이 발생했습니다. 요청을 다시 시도해주세요."));
     }
 }

@@ -1,5 +1,6 @@
 package com.be.course.service;
 
+import com.be.assignment.service.AutoAssignmentService;
 import com.be.course.dto.*;
 import com.be.course.entity.Course;
 import com.be.course.enums.CourseStatus;
@@ -25,6 +26,8 @@ import org.springframework.validation.annotation.Validated;
 public class CourseService {
     private final CourseRepository courses;
     private final MemberRepository members;
+    // 상태 변경 성공 후 같은 트랜잭션에서 배정 처리
+    private final AutoAssignmentService autoAssignment;
 
     @Transactional
     public CourseResponse create(@NotNull @Valid CourseCreateRequest request) {
@@ -84,6 +87,8 @@ public class CourseService {
         }
         course.changeStatus(next);
         courses.flush();
+        // 상태 검증·변경 성공 후 같은 트랜잭션에서 활성 규칙 평가
+        if (next == CourseStatus.OPEN) autoAssignment.assignCourse(id);
         return CourseResponse.from(course);
     }
 

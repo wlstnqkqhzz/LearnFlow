@@ -17,7 +17,8 @@ class UniqueConstraintErrorsTest {
             "uk_job_positions_code, DUPLICATE_JOB_POSITION_CODE",
             "members.uk_members_employee_number, DUPLICATE_EMPLOYEE_NUMBER",
             "members.uk_members_email, DUPLICATE_EMAIL",
-            "uk_course_contents_course_sort_order, DUPLICATE_CONTENT_SORT_ORDER"
+            "uk_course_contents_course_sort_order, DUPLICATE_CONTENT_SORT_ORDER",
+            "uk_enrollments_member_course, DUPLICATE_ENROLLMENT"
     })
     void translatesKnownConstraint(String name, ErrorCode code) {
         var exception = new DataIntegrityViolationException("duplicate",

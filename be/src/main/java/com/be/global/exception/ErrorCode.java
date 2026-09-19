@@ -24,7 +24,14 @@ public enum ErrorCode {
     INVALID_COURSE_STATUS_TRANSITION("허용되지 않은 교육과정 상태 전이입니다."),
     DUPLICATE_CONTENT_SORT_ORDER("이미 사용 중인 콘텐츠 순서입니다."),
     INVALID_CONTENT_ORDER("현재 교육과정의 전체 콘텐츠 ID를 중복 없이 지정해야 합니다."),
-    CONTENT_ORDER_LIMIT_EXCEEDED("콘텐츠 순서 값이 재정렬 가능한 범위를 초과했습니다.");
+    CONTENT_ORDER_LIMIT_EXCEEDED("콘텐츠 순서 값이 재정렬 가능한 범위를 초과했습니다."),
+    ASSIGNMENT_RULE_NOT_FOUND("해당 교육과정의 배정 규칙을 찾을 수 없습니다."),
+    INVALID_ASSIGNMENT_RULE_TARGET("배정 규칙 유형과 대상 조건이 일치하지 않습니다."),
+    INVALID_NEW_EMPLOYEE_DAYS("신입 대상 기간은 1~32767일이어야 합니다."),
+    ENROLLMENT_NOT_FOUND("교육 배정 내역을 찾을 수 없습니다."),
+    DUPLICATE_ENROLLMENT("이미 해당 직원에게 배정된 교육과정입니다."),
+    COURSE_NOT_OPEN_FOR_ASSIGNMENT("OPEN 교육과정에만 신규 배정할 수 있습니다."),
+    RESIGNED_MEMBER_ASSIGNMENT("퇴사자에게 신규 교육을 배정할 수 없습니다.");
 
     private final String message;
 
