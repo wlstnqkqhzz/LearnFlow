@@ -128,6 +128,27 @@ class ServiceValidationTest {
         verifyNoInteractions(rules, courses, enrollments);
     }
 
+    @Test
+    void validatesProgressBeforeRepositoryAccess() {
+        var enrollments = mock(com.be.enrollment.repository.EnrollmentRepository.class);
+        var contents = mock(com.be.course.repository.CourseContentRepository.class);
+        var progresses = mock(com.be.enrollment.repository.ContentProgressRepository.class);
+        var completion = mock(com.be.enrollment.service.EnrollmentCompletionService.class);
+        var service = validated(new com.be.enrollment.service.ContentProgressService(
+                enrollments, contents, progresses, completion, Clock.systemUTC()));
+        for (String rate : new String[] {"-1", "100.01", "33.333"}) {
+            assertThatThrownBy(() -> service.update(1L, 1L, null,
+                    new com.be.enrollment.dto.ContentProgressUpdateRequest(new java.math.BigDecimal(rate))))
+                    .isInstanceOf(ConstraintViolationException.class);
+        }
+        assertThatThrownBy(() -> service.update(1L, 1L, null, null))
+                .isInstanceOf(ConstraintViolationException.class);
+        assertThatThrownBy(() -> service.update(1L, 1L, null,
+                new com.be.enrollment.dto.ContentProgressUpdateRequest(null)))
+                .isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(enrollments, contents, progresses, completion);
+    }
+
     @SuppressWarnings("unchecked")
     private <T> T validated(T target) {
         ProxyFactory proxy = new ProxyFactory(target);

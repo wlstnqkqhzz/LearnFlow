@@ -2,6 +2,8 @@ package com.be.enrollment.entity;
 
 import com.be.course.entity.CourseContent;
 import com.be.global.entity.BaseTimeEntity;
+import com.be.global.exception.BusinessException;
+import com.be.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -65,4 +67,26 @@ public class ContentProgress extends BaseTimeEntity {
     @ColumnDefault("0")
     @Column(name = "version", nullable = false)
     private Long version = 0L;
+
+    // 최초 진도 생성: 소속과 접근 권한은 Service에서 검증
+    public static ContentProgress create(Enrollment enrollment, CourseContent content) {
+        ContentProgress progress = new ContentProgress();
+        progress.enrollment = java.util.Objects.requireNonNull(enrollment);
+        progress.courseContent = java.util.Objects.requireNonNull(content);
+        return progress;
+    }
+
+    // DB 정밀도에 맞는 값만 허용하고 완료 시각은 서버에서 관리
+    public void updateProgress(BigDecimal rate, LocalDateTime now) {
+        if (rate == null || rate.signum() < 0 || rate.compareTo(new BigDecimal("100")) > 0
+                || rate.stripTrailingZeros().scale() > 2) {
+            throw new BusinessException(ErrorCode.INVALID_PROGRESS_RATE);
+        }
+        this.progressRate = rate.setScale(2);
+        if (rate.compareTo(new BigDecimal("100")) == 0) {
+            if (completedAt == null) completedAt = java.util.Objects.requireNonNull(now);
+        } else {
+            completedAt = null;
+        }
+    }
 }

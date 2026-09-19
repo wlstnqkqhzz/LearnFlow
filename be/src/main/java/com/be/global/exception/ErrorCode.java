@@ -31,7 +31,10 @@ public enum ErrorCode {
     ENROLLMENT_NOT_FOUND("교육 배정 내역을 찾을 수 없습니다."),
     DUPLICATE_ENROLLMENT("이미 해당 직원에게 배정된 교육과정입니다."),
     COURSE_NOT_OPEN_FOR_ASSIGNMENT("OPEN 교육과정에만 신규 배정할 수 있습니다."),
-    RESIGNED_MEMBER_ASSIGNMENT("퇴사자에게 신규 교육을 배정할 수 없습니다.");
+    RESIGNED_MEMBER_ASSIGNMENT("퇴사자에게 신규 교육을 배정할 수 없습니다."),
+    ENROLLMENT_PROGRESS_ACCESS_DENIED("해당 수강의 학습 진도에 접근할 수 없습니다."),
+    ENROLLMENT_PROGRESS_NOT_EDITABLE("종료된 수강의 학습 진도는 변경할 수 없습니다."),
+    INVALID_PROGRESS_RATE("진도율은 소수점 둘째 자리까지의 0~100 값이어야 합니다.");
 
     private final String message;
 

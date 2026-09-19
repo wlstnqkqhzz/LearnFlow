@@ -5,6 +5,8 @@ import com.be.course.entity.Course;
 import com.be.enrollment.enums.AssignmentSource;
 import com.be.enrollment.enums.EnrollmentStatus;
 import com.be.global.entity.BaseTimeEntity;
+import com.be.global.exception.BusinessException;
+import com.be.global.exception.ErrorCode;
 import com.be.member.entity.Member;
 import jakarta.persistence.*;
 import java.time.LocalDate;
@@ -108,6 +110,30 @@ public class Enrollment extends BaseTimeEntity {
     @ColumnDefault("0")
     @Column(name = "version", nullable = false)
     private Long version = 0L;
+
+    // 최종 상태에서는 콘텐츠 진도를 새로 만들거나 변경할 수 없음
+    public void requireProgressEditable() {
+        if (status != EnrollmentStatus.ASSIGNED && status != EnrollmentStatus.IN_PROGRESS) {
+            throw new BusinessException(ErrorCode.ENROLLMENT_PROGRESS_NOT_EDITABLE);
+        }
+    }
+
+    // 양수 진도가 처음 기록된 경우에만 호출하며 최초 시작 시각을 보존
+    public void startLearning(LocalDateTime now) {
+        requireProgressEditable();
+        if (status == EnrollmentStatus.ASSIGNED) {
+            status = EnrollmentStatus.IN_PROGRESS;
+            if (startedAt == null) startedAt = java.util.Objects.requireNonNull(now);
+        }
+    }
+
+    // 수료 조건 판정 후 진행 중인 수강만 완료 (ASSIGNED 직접 완료 금지)
+    public void completeLearning(LocalDateTime now) {
+        if (status == EnrollmentStatus.IN_PROGRESS) {
+            status = EnrollmentStatus.COMPLETED;
+            if (completedAt == null) completedAt = java.util.Objects.requireNonNull(now);
+        }
+    }
 
     // 수동 배정: 자동 규칙 참조 없이 ASSIGNED로 생성
     public static Enrollment manual(Member member, Course course, LocalDateTime assignedAt) {

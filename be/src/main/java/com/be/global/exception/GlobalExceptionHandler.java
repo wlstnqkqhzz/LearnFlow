@@ -38,11 +38,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                     INVALID_MEMBER_STATUS_TRANSITION, RESIGNED_MEMBER_UPDATE,
                     INVALID_COURSE_STATUS_TRANSITION, DUPLICATE_CONTENT_SORT_ORDER,
                     DUPLICATE_ENROLLMENT, COURSE_NOT_OPEN_FOR_ASSIGNMENT,
-                    RESIGNED_MEMBER_ASSIGNMENT -> HttpStatus.CONFLICT;
+                    RESIGNED_MEMBER_ASSIGNMENT, ENROLLMENT_PROGRESS_NOT_EDITABLE -> HttpStatus.CONFLICT;
+            case ENROLLMENT_PROGRESS_ACCESS_DENIED -> HttpStatus.FORBIDDEN;
             case SELF_PARENT_DEPARTMENT, DEPARTMENT_CYCLE, REQUIRED_EMPLOYEE_ROLE,
                     INVALID_COURSE_INSTRUCTOR, INVALID_COURSE_PERIOD, COURSE_DATES_REQUIRED,
                     INVALID_CONTENT_ORDER, CONTENT_ORDER_LIMIT_EXCEEDED, INVALID_ASSIGNMENT_RULE_TARGET,
-                    INVALID_NEW_EMPLOYEE_DAYS -> HttpStatus.BAD_REQUEST;
+                    INVALID_NEW_EMPLOYEE_DAYS, INVALID_PROGRESS_RATE -> HttpStatus.BAD_REQUEST;
         };
         return ResponseEntity.status(status).body(ApiErrorResponse.of(code.name(), code.getMessage()));
     }
