@@ -63,6 +63,15 @@ class EntityMappingTest {
             // 전체 매핑으로 SessionFactory가 정상 생성되는지 확인
             try (var sessionFactory = metadata.buildSessionFactory()) {
                 assertThat(sessionFactory.isOpen()).isTrue();
+                // DB 실행 없이 새 교육과정 Repository의 JPQL 경로·타입을 Hibernate로 검증
+                try (var session = sessionFactory.openSession()) {
+                    for (var method : com.be.course.repository.CourseRepository.class.getDeclaredMethods()) {
+                        var query = method.getAnnotation(org.springframework.data.jpa.repository.Query.class);
+                        if (query != null) {
+                            assertThat(session.createSelectionQuery(query.value(), Course.class)).isNotNull();
+                        }
+                    }
+                }
             }
 
             // 테이블 수, 복합 PK, 주요 제약 및 MySQL 저장 옵션 확인

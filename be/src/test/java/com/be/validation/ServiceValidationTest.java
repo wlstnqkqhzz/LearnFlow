@@ -81,6 +81,32 @@ class ServiceValidationTest {
                 .isNotEmpty();
     }
 
+    @Test
+    void validatesCourseServiceBoundary() {
+        var courses = mock(com.be.course.repository.CourseRepository.class);
+        var members = mock(MemberRepository.class);
+        var service = validated(new com.be.course.service.CourseService(courses, members));
+        assertThatThrownBy(() -> service.create(new com.be.course.dto.CourseCreateRequest(
+                " ", null, null, null, null, new java.math.BigDecimal("100.001"), 0L)))
+                .isInstanceOf(ConstraintViolationException.class);
+        assertThatThrownBy(() -> service.changeStatus(1L, new com.be.course.dto.CourseStatusRequest(null)))
+                .isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(courses, members);
+    }
+
+    @Test
+    void validatesContentAndNestedOrderIdsBeforeRepositoryAccess() {
+        var courses = mock(com.be.course.repository.CourseRepository.class);
+        var contents = mock(com.be.course.repository.CourseContentRepository.class);
+        var service = validated(new com.be.course.service.CourseContentService(courses, contents));
+        assertThatThrownBy(() -> service.create(1L, new com.be.course.dto.CourseContentCreateRequest(
+                " ", null, " ", -1, 0, null))).isInstanceOf(ConstraintViolationException.class);
+        assertThatThrownBy(() -> service.reorder(1L,
+                new com.be.course.dto.ContentOrderRequest(java.util.Arrays.asList(1L, null))))
+                .isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(courses, contents);
+    }
+
     @SuppressWarnings("unchecked")
     private <T> T validated(T target) {
         ProxyFactory proxy = new ProxyFactory(target);

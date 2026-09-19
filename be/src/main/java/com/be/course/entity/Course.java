@@ -84,4 +84,30 @@ public class Course extends BaseTimeEntity {
     @JoinColumn(name = "instructor_id", nullable = true,
             foreignKey = @ForeignKey(name = "fk_courses_instructor", options = "ON DELETE RESTRICT ON UPDATE RESTRICT"))
     private Member instructor;
+
+    // Service 검증을 통과한 정보로 초안 생성 (외부에서 생성 상태 지정 불가)
+    public static Course create(String title, String description, CourseType courseType,
+                                LocalDate startDate, LocalDate endDate, BigDecimal passingProgressRate,
+                                Member instructor) {
+        Course course = new Course();
+        course.update(title, description, courseType, startDate, endDate, passingProgressRate, instructor);
+        return course;
+    }
+
+    // 상태·식별자와 분리된 일반 정보 수정
+    public void update(String title, String description, CourseType courseType,
+                       LocalDate startDate, LocalDate endDate, BigDecimal passingProgressRate, Member instructor) {
+        this.title = title;
+        this.description = description;
+        this.courseType = courseType;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.passingProgressRate = passingProgressRate;
+        this.instructor = instructor;
+    }
+
+    // 전이 및 공개 조건 검증은 CourseService에서 수행
+    public void changeStatus(CourseStatus status) {
+        this.status = status;
+    }
 }

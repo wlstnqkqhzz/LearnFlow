@@ -19,6 +19,7 @@ public final class UniqueConstraintErrors {
                     case "uk_job_positions_code" -> ErrorCode.DUPLICATE_JOB_POSITION_CODE;
                     case "uk_members_employee_number" -> ErrorCode.DUPLICATE_EMPLOYEE_NUMBER;
                     case "uk_members_email" -> ErrorCode.DUPLICATE_EMAIL;
+                    case "uk_course_contents_course_sort_order" -> ErrorCode.DUPLICATE_CONTENT_SORT_ORDER;
                     default -> null;
                 };
                 if (code != null) {

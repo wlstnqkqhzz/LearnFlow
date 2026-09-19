@@ -70,4 +70,29 @@ public class CourseContent extends BaseTimeEntity {
     @ColumnDefault("true")
     @Column(name = "is_required", nullable = false, columnDefinition = "boolean")
     private boolean isRequired = true;
+
+    // 소속 교육과정은 생성 시 고정
+    public static CourseContent create(Course course, String title, ContentType contentType,
+                                       String contentUrl, Integer durationSeconds, int sortOrder, boolean required) {
+        CourseContent content = new CourseContent();
+        content.course = course;
+        content.update(title, contentType, contentUrl, durationSeconds, sortOrder, required);
+        return content;
+    }
+
+    // Service에서 소속 및 순서 충돌을 검증한 뒤 콘텐츠 정보 수정
+    public void update(String title, ContentType contentType, String contentUrl,
+                       Integer durationSeconds, int sortOrder, boolean required) {
+        this.title = title;
+        this.contentType = contentType;
+        this.contentUrl = contentUrl;
+        this.durationSeconds = durationSeconds;
+        this.sortOrder = sortOrder;
+        this.isRequired = required;
+    }
+
+    // 전체 재정렬 시 사용하며 항상 양수 순서 유지
+    public void changeSortOrder(int sortOrder) {
+        this.sortOrder = sortOrder;
+    }
 }

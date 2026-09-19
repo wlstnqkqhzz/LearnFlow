@@ -15,7 +15,16 @@ public enum ErrorCode {
     DEPARTMENT_CYCLE("부서 계층에 순환 참조가 발생합니다."),
     INVALID_MEMBER_STATUS_TRANSITION("허용되지 않은 회원 상태 전이입니다."),
     RESIGNED_MEMBER_UPDATE("퇴사자의 일반 정보는 수정할 수 없습니다."),
-    REQUIRED_EMPLOYEE_ROLE("EMPLOYEE 역할은 제거할 수 없습니다.");
+    REQUIRED_EMPLOYEE_ROLE("EMPLOYEE 역할은 제거할 수 없습니다."),
+    COURSE_NOT_FOUND("교육과정을 찾을 수 없습니다."),
+    COURSE_CONTENT_NOT_FOUND("해당 교육과정의 콘텐츠를 찾을 수 없습니다."),
+    INVALID_COURSE_INSTRUCTOR("지정한 회원은 INSTRUCTOR 역할이 없습니다."),
+    INVALID_COURSE_PERIOD("교육 시작일은 종료일보다 늦을 수 없습니다."),
+    COURSE_DATES_REQUIRED("공개·종료 교육과정에는 시작일과 종료일이 필요합니다."),
+    INVALID_COURSE_STATUS_TRANSITION("허용되지 않은 교육과정 상태 전이입니다."),
+    DUPLICATE_CONTENT_SORT_ORDER("이미 사용 중인 콘텐츠 순서입니다."),
+    INVALID_CONTENT_ORDER("현재 교육과정의 전체 콘텐츠 ID를 중복 없이 지정해야 합니다."),
+    CONTENT_ORDER_LIMIT_EXCEEDED("콘텐츠 순서 값이 재정렬 가능한 범위를 초과했습니다.");
 
     private final String message;
 

@@ -29,12 +29,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleBusiness(BusinessException exception) {
         ErrorCode code = exception.getErrorCode();
         HttpStatus status = switch (code) {
-            case DEPARTMENT_NOT_FOUND, JOB_POSITION_NOT_FOUND, MEMBER_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case DEPARTMENT_NOT_FOUND, JOB_POSITION_NOT_FOUND, MEMBER_NOT_FOUND,
+                    COURSE_NOT_FOUND, COURSE_CONTENT_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case DUPLICATE_DEPARTMENT_CODE, DUPLICATE_JOB_POSITION_CODE,
                     DUPLICATE_EMPLOYEE_NUMBER, DUPLICATE_EMAIL,
                     INACTIVE_DEPARTMENT, INACTIVE_JOB_POSITION,
-                    INVALID_MEMBER_STATUS_TRANSITION, RESIGNED_MEMBER_UPDATE -> HttpStatus.CONFLICT;
-            case SELF_PARENT_DEPARTMENT, DEPARTMENT_CYCLE, REQUIRED_EMPLOYEE_ROLE -> HttpStatus.BAD_REQUEST;
+                    INVALID_MEMBER_STATUS_TRANSITION, RESIGNED_MEMBER_UPDATE,
+                    INVALID_COURSE_STATUS_TRANSITION, DUPLICATE_CONTENT_SORT_ORDER -> HttpStatus.CONFLICT;
+            case SELF_PARENT_DEPARTMENT, DEPARTMENT_CYCLE, REQUIRED_EMPLOYEE_ROLE,
+                    INVALID_COURSE_INSTRUCTOR, INVALID_COURSE_PERIOD, COURSE_DATES_REQUIRED,
+                    INVALID_CONTENT_ORDER, CONTENT_ORDER_LIMIT_EXCEEDED -> HttpStatus.BAD_REQUEST;
         };
         return ResponseEntity.status(status).body(ApiErrorResponse.of(code.name(), code.getMessage()));
     }
