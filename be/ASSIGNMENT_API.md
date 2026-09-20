@@ -2,8 +2,9 @@
 
 ## 범위 및 기존 스키마
 
-이번 단계는 규칙 관리와 ASSIGNED Enrollment 생성·조회까지만 제공한다.
-학습 시작·진도·시험·완료·만료 스케줄러·자율 수강·배정 삭제·재수강 초기화는 구현하지 않는다.
+이 문서는 규칙 관리와 ASSIGNED Enrollment 생성·조회를 다룬다.
+학습·시험·수료·자동 만료는 PROGRESS_API.md, EXAM_ATTEMPT_API.md, ENROLLMENT_EXPIRATION.md를 참고한다.
+자율 수강·배정 삭제·재수강 초기화는 제공하지 않는다.
 
 기존 AssignmentRule/Enrollment/Member/Department/JobPosition/Course 엔티티와 SQL을 확인했으며
 필드·nullable·FK·UNIQUE·CHECK·Enum·@Version·DB 스키마는 변경하지 않았다.
@@ -14,7 +15,7 @@
   [Spring Data JPA의 버전 기반 신규 엔티티 판정](https://docs.spring.io/spring-data/jpa/reference/jpa/entity-persistence.html)에 따라
   merge가 반환한 관리 엔티티와 입력 객체가 다를 수 있기 때문이다.
 - AssignmentRule에는 create/updateTarget/changeActive, Enrollment에는 manual/automatic 생성 메서드만 추가했다.
-- Enrollment의 기존 출처·규칙·상태·마감일을 변경하는 메서드나 API는 추가하지 않았다.
+- 배정 API는 기존 출처·규칙·상태·마감일을 변경하지 않는다. 학습·시험·만료 서비스에서만 허용된 상태 전이를 수행한다.
 
 ## 권한
 
@@ -139,7 +140,7 @@ RuleService는 저장/수정/활성화 후 평가한다. 비활성 규칙은 호
 | 기존 배정 존재 | DUPLICATE_ENROLLMENT 409 | 변경 없이 skip |
 | dueDate | 배정 당시 Course.endDate | 동일 |
 
-startedAt/completedAt은 null이다. dueDate가 지나도 이번 단계에서는 상태를 바꾸지 않는다.
+생성 시 startedAt/completedAt은 null이다. 배정 요청에서 즉시 만료시키지는 않으며 서울 자정 스케줄러가 overdue 수강을 처리한다.
 Course 종료일이 나중에 바뀌어도 기존 Enrollment의 dueDate는 바뀌지 않는다.
 OPEN이지만 달력상 기간이 지나거나 아직 시작 전인 과정의 배정을 별도로 막는 정책은 추가하지 않았다.
 
@@ -182,7 +183,7 @@ MANUAL 응답의 assignmentRuleId=null도 정상 반환한다.
 - 규칙 조건을 수정해도 Enrollment.assignmentRuleId는 그대로다. 현재 스키마에는 규칙 조건의
   과거 버전 스냅샷이 없으므로 과거 조건까지 보존하는 기능은 임의로 추가하지 않았다.
 - 미래 입사일이 도래하는 것 자체나 하루 경과는 트리거가 아니다. 날짜 기반 주기 실행을 추가하지 않았다.
-- 모든 신규 수강 상태는 ASSIGNED이며 기존 상태 전이·수료·만료 처리는 이번 범위 밖이다.
+- 모든 신규 수강 상태는 ASSIGNED이며 이후 상태 전이·수료·만료는 각 학습·시험·만료 서비스에서 처리한다.
 
 ## ErrorCode 및 HTTP
 
@@ -245,4 +246,6 @@ DB 잠금 경합용 공통 응답 code=CONCURRENT_MODIFICATION(409)도 추가했
 - DTO/Service Validation, HTTP 오류, MySQL DDL 생성 및 JPQL 파싱
 
 DB는 테스트에서 대체하며, 실제 MySQL SQL 실행·잠금 경합·DB 롤백 검증은 별도 환경이 필요하다.
-BeApplicationTests 전체 앱 기동은 포함하지 않는다. 기존 Redis 통합 테스트는 활성화 옵션이 없으면 건너뛴다.
+위 단계의 `*Test` 실행에는 BeApplicationTests가 포함되지 않았다.
+현재는 외부 저장소를 대체한 부팅 스모크 테스트로 격리되어 `mvn test`에 포함된다.
+기존 Redis 통합 테스트는 활성화 옵션이 없으면 건너뛴다. 최신 결과는 STABILIZATION_REVIEW.md를 참고한다.

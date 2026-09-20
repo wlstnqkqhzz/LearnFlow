@@ -39,6 +39,10 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Query("select m from Member m where m.id = :id")
     Optional<Member> findWithRolesById(@Param("id") Long id);
 
+    // 페이지 조회 후 해당 회원들의 역할만 일괄 로딩 (컬렉션 fetch와 pagination을 분리)
+    @EntityGraph(attributePaths = "roles")
+    List<Member> findWithRolesByIdIn(List<Long> ids);
+
     boolean existsByEmployeeNumber(String employeeNumber);
     boolean existsByEmail(String email);
     boolean existsByEmailAndIdNot(String email, Long id);

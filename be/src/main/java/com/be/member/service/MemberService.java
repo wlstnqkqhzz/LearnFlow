@@ -154,8 +154,11 @@ public class MemberService {
     public Page<MemberResponse> search(@NotNull @Valid MemberSearchRequest request) {
         String pattern = request.name() == null ? null
                 : "%" + request.name().replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
-        return memberRepository.search(pattern, request.departmentId(), request.jobPositionId(), request.status(),
-                PageRequest.of(request.page(), request.size(), Sort.by("id"))).map(MemberResponse::from);
+        var page = memberRepository.search(pattern, request.departmentId(), request.jobPositionId(), request.status(),
+                PageRequest.of(request.page(), request.size(), Sort.by("id")));
+        // 같은 영속성 컨텍스트의 역할을 한 번에 초기화하여 회원별 추가 SELECT 방지
+        if (!page.isEmpty()) memberRepository.findWithRolesByIdIn(page.getContent().stream().map(Member::getId).toList());
+        return page.map(MemberResponse::from);
     }
 
     private Member find(Long id) {

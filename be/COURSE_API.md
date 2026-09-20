@@ -100,7 +100,7 @@ Course 자체 DELETE API는 제공하지 않는다.
 - contentUrl: 필수 문자열, 최대 2,048자. 업로드·외부 URL 호출은 수행하지 않는다.
 - durationSeconds: 선택, 0 이상. 단위는 초.
 - sortOrder: 필수 양의 정수. 과정 내 중복은 409.
-- required: 생성 시 생략/null이면 true. 이번 단계에서는 저장만 한다.
+- required: 생성 시 생략/null이면 true. 현재 수료 판정은 필수 콘텐츠의 평균 진도만 사용한다.
 - PATCH는 생략 필드를 유지한다. durationSeconds만 명시적 null로 제거 가능하다.
 - courseId는 생성 경로에서 고정하며 PATCH로 다른 과정으로 이동할 수 없다.
 - 단건 조회/수정/삭제는 courseId + contentId로 조회한다. 소속 불일치와 없는 콘텐츠는 모두 404다.
@@ -166,6 +166,9 @@ DTO 검증·Enum·JSON 오류와 FK 충돌은 기존 공통 오류 처리를 재
 검증 명령: `mvn -Dtest=*Test test`.
 Service 단위 테스트, 실제 MVC/Security 체인과 Mock Service 기반 API 테스트,
 Hibernate MySQL DDL 생성 및 JPQL 파싱을 포함한다. 실제 MySQL SQL 실행·잠금 경합 검증은 포함하지 않는다.
-기존 Redis 통합 테스트는 활성화 옵션이 없으면 건너뛰며, BeApplicationTests 전체 앱 기동은 별도 환경이 필요하다.
+기존 Redis 통합 테스트는 활성화 옵션이 없으면 건너뛴다. BeApplicationTests는 외부 저장소를 대체한 부팅 스모크 테스트다.
+기본 전체 실행은 `mvn test`이며 최신 검증 범위는 STABILIZATION_REVIEW.md를 참고한다.
 
-AssignmentRule, Enrollment, ContentProgress, Exam, CourseSession 및 프론트/모바일 기능은 구현하지 않았다.
+AssignmentRule/Enrollment, ContentProgress, Exam 및 실제 응시·자동 만료는 후속 구현이 완료되었다.
+각 ASSIGNMENT_API.md, PROGRESS_API.md, EXAM_API.md, EXAM_ATTEMPT_API.md, ENROLLMENT_EXPIRATION.md를 참고한다.
+CourseSession 및 프론트/모바일은 이 백엔드 API 문서 범위에 포함하지 않는다.

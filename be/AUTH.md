@@ -23,7 +23,14 @@ Secret과 두 만료 시간은 필수 설정이다. 키나 토큰을 로그·저
 | /api/departments 및 하위 경로 | ADMIN | 기존 정책 유지 |
 | /api/job-positions 및 하위 경로 | ADMIN | 기존 정책 유지 |
 | /api/members 및 하위 경로 | ADMIN | 기존 정책 유지 |
-| 그 외 경로 | 차단 | - |
+| Course/콘텐츠 조회 | ADMIN 또는 INSTRUCTOR | 200 |
+| Course/콘텐츠 변경, 규칙·수동배정·시험 구성 관리 | ADMIN | 각 API 정책 |
+| 본인 수강 목록·진도·시험 응시 | EMPLOYEE, Service에서 소유권 확인 | 각 API 정책 |
+| 타인 진도·시험 결과·이력 조회 | ADMIN 예외 허용, 변경은 불가 | 200 |
+| 명시적으로 허용하지 않은 경로 | 차단 | - |
+
+권한 matcher의 정확한 경로와 관리/학습 구분은 COURSE_API.md, ASSIGNMENT_API.md,
+PROGRESS_API.md, EXAM_API.md, EXAM_ATTEMPT_API.md를 함께 참고한다.
 
 로그인 본문:
 
@@ -114,7 +121,7 @@ Redis 장애는 인증 불일치로 위장하지 않으며 기존 공통 서버 
 일반 회귀 테스트:
 
 ```text
-mvn -Dtest=*Test test
+mvn test
 ```
 
 JWT 생성·검증, 로그인·재발급·로그아웃 API, Security, Redis 호출 계약 및 기존
@@ -130,7 +137,8 @@ mvn -Dtest=RefreshTokenRedisIntegrationTest -Dredis.integration-test=true test
 인증 없는 개발용 Redis를 대상으로 하며 실제 양수 회원 ID와 겹치지 않는
 임의 음수 ID 키만 사용한다. 해당 임시 키만 정리하며 FLUSHDB는 사용하지 않는다.
 활성화 옵션이 없으면 이 통합 테스트는 건너뛴다.
-전체 앱 기동 BeApplicationTests 및 실제 MySQL 검증은 별도 환경이 필요하다.
+BeApplicationTests는 외부 DataSource/Redis 연결만 대체하는 부팅 스모크 테스트이며 기본 실행에 포함된다.
+실제 MySQL SQL·잠금·롤백 검증은 별도 격리 환경이 필요하다. 최신 결과는 STABILIZATION_REVIEW.md를 참고한다.
 
 기존 Entity·조직/회원 Service·DB 설계는 변경하지 않았다.
 Access blacklist, 멀티 디바이스, RedisHash, DB 토큰 테이블, OAuth2, 회원가입,

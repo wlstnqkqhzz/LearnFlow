@@ -93,7 +93,7 @@ Java 21에서 Maven `-B -ntp -Dtest=*Test test` 실행 결과:
 
 - 전체 500건, 통과 497건, 실패 0건, 오류 0건, 건너뜀 3건, BUILD SUCCESS.
 - 건너뜀 3건은 기존 Redis 연동 테스트의 실행 조건에 따른 것이다.
-- DB가 필요한 `BeApplicationTests`는 `*Test` 선택 범위에 포함되지 않는다.
+- 위 실행 당시 DB가 필요했던 `BeApplicationTests`는 `*Test` 선택 범위에서 제외했다. 현재는 외부 저장소를 대체한 부팅 스모크 테스트로 기본 `mvn test`에 포함되며 최신 결과는 STABILIZATION_REVIEW.md를 참고한다.
 - 새 충돌 테스트는 실제 Spring 트랜잭션 프록시와 모의 TransactionManager/Repository를 사용한다. rollback 후 다음 건 시작과 commit 실패 시 성공 집계 제외를 검증한다.
 - 실제 MySQL에서 두 트랜잭션을 병렬 실행하는 경쟁 테스트는 수행하지 않았다. 모의 테스트는 DB의 격리/잠금 동작 자체를 검증하지 않는다.
 - 자정 대기를 위한 sleep은 사용하지 않았다. SQL 파일을 실행하지 않았다.

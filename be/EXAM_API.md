@@ -1,15 +1,13 @@
 # 시험·문항·선택지 관리 API
 
 > 2026-09-20 업데이트: 실제 응시·제출·채점은 EXAM_ATTEMPT_API.md에 구현되어 있다.
-> 아래의 '미구현/후속 결정' 설명은 관리 기능 구현 당시의 기록이다.
 > 현재는 첫 Attempt 이후 시험 제목·설정·문항·선택지·순서를 모두 동결한다.
 > 기존 삭제 보호 정책은 그대로 유지한다. 현재 응시 정책은 새 문서를 우선한다.
 
 ## 구현 범위
 
 ADMIN이 Course별 시험, 문항, 선택지를 구성하는 단계다. Course당 Exam은 0..1개다.
-응시 시작, ExamAttempt/ExamAnswer 생성, 답안 저장·제출, 채점, 시험 결과,
-Enrollment FAILED/시험 합격 수료 처리는 구현하지 않았다.
+응시 시작, 답안 저장·제출, 채점, 시험 결과와 FAILED/합격 수료는 EXAM_ATTEMPT_API.md의 별도 API로 제공한다.
 기존 DB 15개 테이블과 Entity 필드·관계·UNIQUE·FK RESTRICT는 변경하지 않았다.
 
 ## Endpoint
@@ -104,7 +102,8 @@ totalQuestionScore는 Question.score 합계이며 별도 DB 컬럼에 저장하�
 ```
 
 QuestionAdminResponse/ChoiceAdminResponse는 정답을 포함하는 관리자 전용 DTO다.
-향후 EMPLOYEE 응시용 DTO에는 correct를 포함하지 말고 별도 정의해야 한다.
+EMPLOYEE 응시용 DTO는 별도로 정의되어 있으며 correct를 포함하지 않는다.
+관리 선택지 DTO의 toString은 정답·선택지 내용을 가리지만 관리자 JSON 응답 계약은 유지한다.
 
 문항 PATCH는 questionText/questionType/score/sortOrder를 부분 수정한다.
 correctChoiceIds를 함께 전달하면 기존 선택지 ID를 유지한 채 정답 집합을 원자적으로 교체한다.
@@ -134,7 +133,7 @@ TRUE_FALSE는 별도 Boolean answer 필드 없이 기존 QuestionChoice를 사�
 TRUE_FALSE의 선택지를 하나만 추가/삭제하여 총 개수를 1개/3개로 만드는 요청 역시 실패한다.
 TRUE_FALSE 정답 변경은 correctChoiceIds를 사용하고, 문항 전체를 제거하려면 문항 DELETE를 사용한다.
 
-### 향후 채점 규칙 (이번 단계 미구현)
+### 현재 채점 규칙
 
 - SINGLE_CHOICE/TRUE_FALSE: 제출 선택지가 정답과 일치하면 원점수 전부, 아니면 0점.
 - MULTIPLE_CHOICE: 제출 Choice 집합이 정답 집합과 정확히 같으면 원점수 전부, 아니면 0점.
@@ -165,9 +164,9 @@ ExamConfigurationValidator.validate는 시험 설정, 최소 1개 문항, 양수
 ExamService.validateConfiguration은 Course/Exam 존재 확인 후 문항과 선택지를 일괄 조회하여 검증한다.
 조회는 readOnly 트랜잭션이고 어떤 응시/답안/수강 상태도 변경하지 않는다.
 
-다음 ExamAttempt 단계에서는 같은 Validator를 시작 직전에 재사용할 수 있다.
-검증 후 시작 사이의 구성 변경을 막으려면 향후 응시 시작도 같은 Course 잠금 규약을 따라야 한다.
-삭제 보호용 ExamAttemptRepository/ExamAnswerRepository는 exists/참조 확인만 제공하며 save 메서드는 없다.
+ExamAttemptService는 같은 Validator를 응시 시작과 제출에서 재사용한다.
+응시 시작은 Course 잠금을 먼저 획득하고, 첫 Attempt 이후 관리 쓰기를 동결하여 구성 변경 경합을 보호한다.
+ExamAttemptRepository/ExamAnswerRepository는 조회·저장과 관리 삭제 보호 검사를 함께 제공한다.
 
 ## 중복·동시성·삭제
 
@@ -188,10 +187,8 @@ ExamService.validateConfiguration은 Course/Exam 존재 확인 후 문항과 선
 개별 Choice CRUD만으로 SINGLE_CHOICE 정답을 교체할 수 없는 모순은 correctChoiceIds 원자적 변경으로 해결했다.
 문항 0개인 시험은 구성 중인 상태로 허용하지만 응시 가능한 구성은 아니다. 새 Exam 상태 Enum은 추가하지 않았다.
 
-요청 범위에 따라 응시 이력 존재 시 **삭제**는 제한하지만, 설정/문항/선택지 **수정** 자체는 새로 금지하지 않았다.
-현재 스키마에는 시험 구성 스냅샷/버전이 없으므로 응시 기능을 도입하기 전
-진행·제출 이력에 대한 수정 잠금 또는 스냅샷 정책을 확정해야 한다.
-현재 API를 이력 보존용 시험 버전 관리로 간주하면 안 된다.
+첫 Attempt 이후 시험 제목·합격점수·횟수·문항·선택지·순서 및 추가는 EXAM_CONFIGURATION_LOCKED(409)로 거부한다.
+삭제는 EXAM_HISTORY_DELETE_CONFLICT(409)로 거부한다. 현재는 구성 동결 정책이며 이력별 스냅샷/버전 관리는 제공하지 않는다.
 
 OPEN/CLOSED 상태에 대한 새 편집 제한은 없다. 이미 완료된 수강은 시험 추가로 다시 열리지 않는다.
 학습 진도 요청과 시험 생성 사이를 직렬화하는 새 잠금도 추가하지 않았다.
@@ -280,6 +277,6 @@ ExamRepository는 기존 existsByCourseId를 유지하면서 관리 CRUD/소속 
 - 기존 UniqueConstraintErrorsTest에 3개, ServiceValidationTest에 1개 추가. 총 신규 검증 66개.
 - EntityMappingTest에서 답안 선택지 참조 JPQL도 추가 검증했다. 스키마는 여전히 15개 테이블이다.
 - 기존 Redis 통합 테스트 3개는 활성화 설정이 없어 건너뜀.
-- 실제 DB 연결용 BeApplicationTests는 *Test 패턴에서 제외된다.
+- 위 실행 당시 BeApplicationTests는 *Test 패턴에서 제외했다. 현재는 외부 저장소를 대체한 부팅 스모크 테스트로 기본 `mvn test`에 포함되며 최신 결과는 STABILIZATION_REVIEW.md를 참고한다.
 - 실제 MySQL 경합/UNIQUE 순서 교환/트랜잭션 롤백은 실행하지 않았다.
   단위 테스트의 flush 단계 검증 및 Hibernate 매핑 검증을 실 DB 검증으로 간주하지 않는다.

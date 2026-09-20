@@ -116,6 +116,21 @@ class ApiServiceExtensionTest {
         assertThat(result.getTotalElements()).isEqualTo(20);
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().getFirst().id()).isEqualTo(4L);
+        verify(members).findWithRolesByIdIn(List.of(4L));
+    }
+
+    @Test
+    void memberPageLoadsRolesOnceForOnlyTheReturnedIdsAndPreservesOrder() {
+        var second = Member.create("E002", "second@example.com", "hash", "둘째",
+                child, member.getJobPosition(), member.getHireDate());
+        ReflectionTestUtils.setField(second, "id", 9L);
+        second.addRole(com.be.member.enums.Role.INSTRUCTOR);
+        Pageable pageable = PageRequest.of(0, 20, Sort.by("id"));
+        when(members.search(null, null, null, null, pageable)).thenReturn(new PageImpl<>(List.of(member, second), pageable, 2));
+        var result = service.search(new MemberSearchRequest(null, null, null, null, null, null));
+        assertThat(result.getContent()).extracting(MemberResponse::id).containsExactly(4L, 9L);
+        assertThat(result.getContent().getLast().roles()).contains(com.be.member.enums.Role.INSTRUCTOR);
+        verify(members, times(1)).findWithRolesByIdIn(List.of(4L, 9L));
     }
 
     @Test
@@ -125,5 +140,6 @@ class ApiServiceExtensionTest {
         var result = service.search(new MemberSearchRequest(null, null, " ", null, null, null));
         assertThat(result.getContent()).isEmpty();
         verify(members).search(null, null, null, null, pageable);
+        verify(members, never()).findWithRolesByIdIn(anyList());
     }
 }

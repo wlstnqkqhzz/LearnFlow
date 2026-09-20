@@ -241,5 +241,6 @@ Entity 변경은 ExamAttempt 시작·제출, ExamAnswer 생성·선택 교체·�
 - 기존 ExamManagementServiceTest에 전체 구성 동결 검증 1개 추가. 신규 검증 총 41개.
 - 기존 매핑 테스트에서 새 잠금 조회/응시 식별 JPQL도 검증했다.
 - Redis 통합 테스트 3개는 활성화되지 않아 건너뜀. BeApplicationTests는 *Test 패턴에서 제외.
+- 위 결과는 응시 기능 구현 당시 기록이다. 현재 BeApplicationTests는 외부 저장소를 대체한 부팅 스모크 테스트로 기본 `mvn test`에 포함되며 최신 결과는 STABILIZATION_REVIEW.md를 참고한다.
 - 실제 MySQL 동시 요청, 잠금 순서, UNIQUE 경합, 커밋/롤백 통합 검증은 미실행이다.
   Mock 기반 순차 워크플로와 예외 전파 검증을 실제 DB 동시성 검증으로 간주하지 않는다.

@@ -2,13 +2,13 @@
 
 > 2026-09-20 업데이트: 공통 수료 판정은 이제 Exam이 있어도 제출된 합격 Attempt가 있으면
 > 콘텐츠 조건과 함께 COMPLETED를 판정한다. 시험 먼저/콘텐츠 먼저 모두 지원한다.
-> 아래 '시험 기능 미구현/시험이 있으면 IN_PROGRESS 유지' 설명은 진도 단계 당시의 기록이며,
-> 현재 시험 정책은 EXAM_ATTEMPT_API.md를 우선한다.
+> 현재 시험 정책은 EXAM_ATTEMPT_API.md, 자동 만료는 ENROLLMENT_EXPIRATION.md를 참고한다.
 
 ## 범위
 
 직원 본인의 콘텐츠 진도 기록, 학습 시작, 필수 콘텐츠 평균 계산, 시험 없는 과정의 수료를 구현한다.
-시험 응시·제출·채점, 실패 처리, 만료 배치, 영상/문서 추적, 알림, 프론트엔드는 포함하지 않는다.
+시험 응시·제출·채점·실패 및 만료 배치는 별도 서비스에 구현되어 있다.
+영상/문서 추적, 알림, 프론트엔드는 이 API에 포함하지 않는다.
 기존 15개 테이블과 Entity 필드·매핑·인덱스·CHECK·@Version은 변경하지 않았다.
 
 ## API 및 권한
@@ -85,22 +85,21 @@ row가 없는 콘텐츠도 응답에 progressRate=0.00, completedAt=null로 포�
 - 필수 콘텐츠 0개는 조건 충족으로 취급하며 평균 응답은 100.00이다.
 - EnrollmentCompletionService가 계산 및 수료 판정을 담당한다.
 - IN_PROGRESS이고 콘텐츠 조건 충족 + Exam 없음이면 COMPLETED 및 completedAt을 기록한다.
-- Exam이 있으면 이번 단계에서는 합격 이력 유무와 관계없이 IN_PROGRESS를 유지한다.
-- ExamRepository는 existsByCourseId 조회만 추가했다. ExamAttempt 서비스/저장/조회는 추가하지 않았다.
-- 향후 시험 제출 시에도 같은 판정기를 호출하고, Exam 존재 시 합격 이력을 확인하는 분기만 확장할 수 있다.
-- evaluate는 MANDATORY 트랜잭션이다. 향후 호출자도 동일 수강의 버전을 잠그고 진도 요약을 새로 계산해야 한다.
+- Exam이 있으면 콘텐츠 조건과 제출된 합격 Attempt가 모두 충족될 때 COMPLETED로 전환한다.
+- 시험 먼저 합격한 뒤 콘텐츠를 완료해도 동일하게 수료한다.
+- 시험 제출과 진도 변경은 같은 EnrollmentCompletionService를 재사용한다.
+- evaluate는 MANDATORY 트랜잭션이며 호출자는 동일 수강의 버전을 잠그고 진도 요약을 계산한다.
 
 ### 충돌하거나 애매한 규칙의 해석
 
 필수 콘텐츠 0개 또는 passingProgressRate=0이라도 0% 요청만으로 ASSIGNED를 바로 COMPLETED로 전환하지 않는다.
 이는 기존 ASSIGNED → IN_PROGRESS → COMPLETED 및 startedAt CHECK를 보존하기 위함이다.
 양수 진도가 들어오면 시작과 수료가 같은 트랜잭션에서 일어날 수 있다.
-콘텐츠 자체가 없는 과정은 이번 진도 API만으로 시작·수료시키지 않는다. 향후 시험 트리거에서 다룬다.
+콘텐츠 자체가 없는 과정은 진도 API만으로 시작·수료시키지 않는다. Exam-only 과정은 시험 시작·합격으로 수료한다.
 배정 생성이나 GET은 완료 판정 트리거가 아니다.
 
 dueDate 당일까지 학습 가능, 다음 날 서울 00:00부터 만료 대상이라는 기존 정의를 유지한다.
-다만 이번 단계에서는 날짜 경과만으로 업데이트를 차단하거나 EXPIRED로 전환하지 않는다.
-이미 EXPIRED로 저장된 수강은 차단한다.
+진도 요청에서 날짜 경과만으로 즉시 만료시키지는 않는다. 서울 자정 스케줄러가 상태를 EXPIRED로 저장한 뒤 차단한다.
 Course 상태/기간에 따른 별도 학습 차단도 추가하지 않았다.
 관리자가 콘텐츠나 기준을 바꿔도 이미 COMPLETED인 수강을 재개하거나 자동 재평가하지 않는다.
 수료 전 조회·판정에는 현재 과정 콘텐츠와 기준을 사용하며 이력 스냅샷 필드는 추가하지 않았다.
@@ -181,6 +180,6 @@ Course 상태/기간에 따른 별도 학습 차단도 추가하지 않았다.
 - ServiceValidationTest에 진도 검증 1개 추가 (총 8개). 이번 추가 검증은 총 49개.
 - 기존 전체 Entity 매핑/MySQL DDL 생성/Repository JPQL 검증도 통과했다.
 - Redis 통합 테스트 3개는 기존 활성화 설정이 없어 건너뛰었다.
-- 실제 DB 연결이 필요한 BeApplicationTests는 `*Test` 선택 범위에서 제외된다.
+- 위 실행 당시 BeApplicationTests는 `*Test` 선택 범위에서 제외했다. 현재는 외부 저장소를 대체한 부팅 스모크 테스트로 기본 `mvn test`에 포함되며 최신 결과는 STABILIZATION_REVIEW.md를 참고한다.
 - 실제 MySQL 동시 트랜잭션의 @Version/UNIQUE 경합 및 롤백은 검증하지 않았다.
   Mockito 예외 전파/API 응답 테스트를 실제 DB 동시성 검증으로 간주하지 않는다.
