@@ -23,6 +23,7 @@ public class ExamService {
     private final QuestionRepository questions;
     private final QuestionChoiceRepository choices;
     private final ExamConfigurationValidator validator;
+    private final ExamAttemptRepository attempts;
 
     @Transactional
     public ExamResponse create(@NotNull @Positive Long courseId, @NotNull @Valid ExamCreateRequest request) {
@@ -40,6 +41,7 @@ public class ExamService {
     @Transactional
     public ExamResponse update(@NotNull @Positive Long courseId, @NotNull @Valid ExamPatchRequest request) {
         Exam exam = requireExam(courseId, true);
+        requireMutable(exam);
         exam.update(request.getTitle() == null ? exam.getTitle() : request.getTitle().trim(),
                 request.getPassingScore() == null ? exam.getPassingScore() : request.getPassingScore(),
                 request.getMaxAttempts() == null ? exam.getMaxAttempts() : request.getMaxAttempts());
@@ -67,5 +69,10 @@ public class ExamService {
 
     private ExamResponse response(Exam exam) {
         return ExamResponse.from(exam, questions.findByExamIdOrderBySortOrderAsc(exam.getId()));
+    }
+
+    // 스냅샷이 없으므로 문구·순서를 포함한 모든 구성 변경을 첫 응시 후 동결
+    void requireMutable(Exam exam) {
+        if (attempts.existsByExamId(exam.getId())) throw new BusinessException(ErrorCode.EXAM_CONFIGURATION_LOCKED);
     }
 }

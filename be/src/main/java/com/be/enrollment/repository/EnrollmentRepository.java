@@ -14,6 +14,14 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     @EntityGraph(attributePaths = {"member", "course", "assignmentRule"})
     Optional<Enrollment> findById(Long id);
 
+    @Query("select e.course.id from Enrollment e where e.id = :id")
+    Optional<Long> findCourseId(@Param("id") Long id);
+
+    // 시험 변경을 직렬화하며 동시에 진행 중인 진도 요청의 낙관적 버전도 무효화
+    @Lock(LockModeType.PESSIMISTIC_FORCE_INCREMENT)
+    @Query("select e from Enrollment e where e.id = :id")
+    Optional<Enrollment> findForExamUpdate(@Param("id") Long id);
+
     // 서로 다른 콘텐츠의 동시 수정도 동일 수강 버전으로 충돌 감지하여 수료 판정 누락 방지
     @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @EntityGraph(attributePaths = {"member", "course"})

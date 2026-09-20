@@ -32,7 +32,7 @@ class ContentProgressServiceTest {
     final ContentProgressRepository progresses = mock(ContentProgressRepository.class);
     final ExamRepository exams = mock(ExamRepository.class);
     final ContentProgressService service = new ContentProgressService(enrollments, contents, progresses,
-            new EnrollmentCompletionService(exams), AssignmentFixtures.CLOCK);
+            new EnrollmentCompletionService(exams, mock(com.be.exam.repository.ExamAttemptRepository.class), mock(com.be.course.repository.CourseContentRepository.class), mock(com.be.enrollment.repository.ContentProgressRepository.class)), AssignmentFixtures.CLOCK);
     Course course;
     Enrollment enrollment;
     CourseContent content;

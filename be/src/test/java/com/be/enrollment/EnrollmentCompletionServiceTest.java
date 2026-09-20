@@ -18,7 +18,7 @@ import static org.mockito.Mockito.*;
 // 필수 콘텐츠 합계 기반 정확한 판정과 상태 전이 경계 검증
 class EnrollmentCompletionServiceTest {
     final ExamRepository exams = mock(ExamRepository.class);
-    final EnrollmentCompletionService service = new EnrollmentCompletionService(exams);
+    final EnrollmentCompletionService service = new EnrollmentCompletionService(exams, mock(com.be.exam.repository.ExamAttemptRepository.class), mock(com.be.course.repository.CourseContentRepository.class), mock(com.be.enrollment.repository.ContentProgressRepository.class));
 
     @Test void missingRequiredCountsAsZeroOptionalExcluded() {
         var result = service.summarize(List.of(item("100", true), item("50", true),

@@ -118,7 +118,7 @@ public class Enrollment extends BaseTimeEntity {
         }
     }
 
-    // 양수 진도가 처음 기록된 경우에만 호출하며 최초 시작 시각을 보존
+    // 양수 진도 기록 또는 시험 시작 시 호출하며 최초 시작 시각을 보존
     public void startLearning(LocalDateTime now) {
         requireProgressEditable();
         if (status == EnrollmentStatus.ASSIGNED) {
@@ -133,6 +133,12 @@ public class Enrollment extends BaseTimeEntity {
             status = EnrollmentStatus.COMPLETED;
             if (completedAt == null) completedAt = java.util.Objects.requireNonNull(now);
         }
+    }
+
+    // 시험 응시 횟수를 모두 소진한 불합격 수강만 종료; 수료 시각은 기록하지 않음
+    public void failLearning() {
+        requireProgressEditable();
+        if (status == EnrollmentStatus.IN_PROGRESS) status = EnrollmentStatus.FAILED;
     }
 
     // 수동 배정: 자동 규칙 참조 없이 ASSIGNED로 생성

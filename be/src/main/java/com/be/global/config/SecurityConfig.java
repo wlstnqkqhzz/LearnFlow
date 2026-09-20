@@ -45,6 +45,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/courses/*/assignment-rules", "/api/courses/*/assignment-rules/**",
                                 "/api/courses/*/enrollments", "/api/courses/*/enrollments/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/enrollments/me").hasRole("EMPLOYEE")
+                        .requestMatchers(HttpMethod.POST, "/api/enrollments/*/exam-attempts", "/api/exam-attempts/*/submit").hasRole("EMPLOYEE")
+                        .requestMatchers(HttpMethod.PUT, "/api/exam-attempts/*/answers/*").hasRole("EMPLOYEE")
+                        .requestMatchers(HttpMethod.GET, "/api/enrollments/*/exam-attempts", "/api/exam-attempts/*/result").hasAnyRole("EMPLOYEE", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/exam-attempts/*").hasRole("EMPLOYEE")
                         // 진도 전용 경로를 관리자 전용 수강 경로보다 먼저 선언; 소유권은 Service에서 검증
                         .requestMatchers(HttpMethod.GET, "/api/enrollments/*/progress").hasAnyRole("EMPLOYEE", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/enrollments/*/contents/*/progress").hasRole("EMPLOYEE")

@@ -73,4 +73,28 @@ public class ExamAnswer {
     public Set<QuestionChoice> getSelectedChoices() {
         return Collections.unmodifiableSet(selectedChoices);
     }
+
+    // 임시 답안 생성 (채점 값은 null)
+    public static ExamAnswer create(ExamAttempt attempt, Question question) {
+        ExamAnswer answer = new ExamAnswer();
+        answer.examAttempt = attempt;
+        answer.question = question;
+        return answer;
+    }
+
+    // 기존 연결을 현재 선택 집합과 정확히 동기화
+    public void replaceChoices(Set<QuestionChoice> choices) {
+        examAttempt.requireUnsubmitted();
+        selectedChoices.clear();
+        selectedChoices.addAll(choices);
+        isCorrect = null;
+        earnedScore = null;
+    }
+
+    // 제출 중에만 호출; 획득 배점은 정규화하지 않은 원점수
+    public void grade(boolean correct) {
+        examAttempt.requireUnsubmitted();
+        isCorrect = correct;
+        earnedScore = correct ? question.getScore() : BigDecimal.ZERO;
+    }
 }

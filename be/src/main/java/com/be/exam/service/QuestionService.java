@@ -30,6 +30,7 @@ public class QuestionService {
     @Transactional
     public QuestionAdminResponse create(@NotNull @Positive Long courseId, @NotNull @Valid QuestionCreateRequest request) {
         Exam exam = exams.requireExam(courseId, true);
+        exams.requireMutable(exam);
         if (questions.existsByExamIdAndSortOrder(exam.getId(), request.sortOrder())) duplicateQuestionOrder();
         var question = Question.create(exam, request.questionText().trim(), request.questionType(), request.score(), request.sortOrder());
         var items = request.choices().stream().map(c -> QuestionChoice.create(question, c.choiceText().trim(), c.correct(), c.sortOrder())).toList();
@@ -58,6 +59,7 @@ public class QuestionService {
     public QuestionAdminResponse update(@NotNull @Positive Long courseId, @NotNull @Positive Long questionId,
             @NotNull @Valid QuestionPatchRequest request) {
         Question question = find(courseId, questionId, true);
+        exams.requireMutable(question.getExam());
         int order = request.getSortOrder() == null ? question.getSortOrder() : request.getSortOrder();
         if (questions.existsByExamIdAndSortOrderAndIdNot(question.getExam().getId(), order, questionId)) duplicateQuestionOrder();
         var items = choiceList(question);
@@ -95,6 +97,7 @@ public class QuestionService {
     @Transactional
     public List<QuestionAdminResponse> reorder(@NotNull @Positive Long courseId, @NotNull @Valid QuestionOrderRequest request) {
         Exam exam = exams.requireExam(courseId, true);
+        exams.requireMutable(exam);
         var current = questions.findByExamIdOrderBySortOrderAsc(exam.getId());
         var byId = current.stream().collect(Collectors.toMap(Question::getId, q -> q));
         checkFullOrder(request.questionIds(), byId.keySet(), ErrorCode.INVALID_QUESTION_ORDER);
@@ -123,6 +126,7 @@ public class QuestionService {
     public ChoiceAdminResponse createChoice(@NotNull @Positive Long courseId, @NotNull @Positive Long questionId,
             @NotNull @Valid ChoiceCreateRequest request) {
         Question question = find(courseId, questionId, true);
+        exams.requireMutable(question.getExam());
         var items = new ArrayList<>(choiceList(question));
         var choice = QuestionChoice.create(question, request.choiceText().trim(), request.correct(), request.sortOrder());
         items.add(choice);
@@ -135,6 +139,7 @@ public class QuestionService {
     public ChoiceAdminResponse updateChoice(@NotNull @Positive Long courseId, @NotNull @Positive Long questionId,
             @NotNull @Positive Long choiceId, @NotNull @Valid ChoicePatchRequest request) {
         Question question = find(courseId, questionId, true);
+        exams.requireMutable(question.getExam());
         QuestionChoice choice = findChoice(questionId, choiceId);
         var items = choiceList(question);
         choice.update(request.getChoiceText() == null ? choice.getChoiceText() : request.getChoiceText().trim(),
@@ -164,6 +169,7 @@ public class QuestionService {
     public List<ChoiceAdminResponse> reorderChoices(@NotNull @Positive Long courseId, @NotNull @Positive Long questionId,
             @NotNull @Valid ChoiceOrderRequest request) {
         Question question = find(courseId, questionId, true);
+        exams.requireMutable(question.getExam());
         var current = choiceList(question);
         var byId = current.stream().collect(Collectors.toMap(QuestionChoice::getId, c -> c));
         checkFullOrder(request.choiceIds(), byId.keySet(), ErrorCode.INVALID_CHOICE_ORDER);

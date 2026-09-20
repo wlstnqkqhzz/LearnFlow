@@ -66,4 +66,27 @@ public class ExamAttempt {
     // 시험 제출 시각 (UTC, 미제출이면 null)
     @Column(name = "submitted_at", nullable = true, columnDefinition = "datetime(6)")
     private LocalDateTime submittedAt;
+
+    // 시작 시점에는 점수·합격 여부·제출 시각을 모두 null로 유지
+    public static ExamAttempt start(Enrollment enrollment, Exam exam, int number, LocalDateTime now) {
+        ExamAttempt attempt = new ExamAttempt();
+        attempt.enrollment = enrollment;
+        attempt.exam = exam;
+        attempt.attemptNumber = number;
+        attempt.startedAt = now;
+        return attempt;
+    }
+
+    public void requireUnsubmitted() {
+        if (submittedAt != null) throw new com.be.global.exception.BusinessException(
+                com.be.global.exception.ErrorCode.EXAM_ATTEMPT_ALREADY_SUBMITTED);
+    }
+
+    // 채점 및 수강 상태 변경과 동일 트랜잭션에서 한 번만 확정
+    public void submit(BigDecimal score, boolean passed, LocalDateTime now) {
+        requireUnsubmitted();
+        this.score = score;
+        this.passed = passed;
+        this.submittedAt = now;
+    }
 }

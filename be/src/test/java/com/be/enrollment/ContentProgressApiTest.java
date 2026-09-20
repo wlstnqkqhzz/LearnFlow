@@ -47,6 +47,7 @@ class ContentProgressApiTest {
     @MockitoBean CourseContentRepository contents;
     @MockitoBean ContentProgressRepository progresses;
     @MockitoBean ExamRepository exams;
+    @MockitoBean com.be.exam.repository.ExamAttemptRepository attempts;
     @MockitoBean JwtTokenProvider tokens;
     @MockitoBean MemberAuthenticationService authenticatedMembers;
 

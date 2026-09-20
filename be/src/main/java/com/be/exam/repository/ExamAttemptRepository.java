@@ -1,9 +1,21 @@
 package com.be.exam.repository;
 
 import com.be.exam.entity.ExamAttempt;
-import org.springframework.data.repository.Repository;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
+import java.util.*;
 
-// 삭제 보호를 위한 이력 존재 확인만 제공; 응시 생성/제출 기능 없음
-public interface ExamAttemptRepository extends Repository<ExamAttempt, Long> {
+// 응시 저장·이력 조회 및 관리자 구성 동결 검사
+public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, Long> {
     boolean existsByExamId(Long examId);
+    List<ExamAttempt> findByEnrollmentIdOrderByAttemptNumberAsc(Long enrollmentId);
+    boolean existsByEnrollmentIdAndSubmittedAtIsNotNullAndPassedTrue(Long enrollmentId);
+
+    @Query("select a.enrollment.id from ExamAttempt a where a.id = :id")
+    Optional<Long> findEnrollmentId(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from ExamAttempt a where a.id = :id")
+    Optional<ExamAttempt> findForUpdate(@Param("id") Long id);
 }

@@ -156,7 +156,7 @@ class ServiceValidationTest {
         var questions = mock(com.be.exam.repository.QuestionRepository.class);
         var choices = mock(com.be.exam.repository.QuestionChoiceRepository.class);
         var validator = new com.be.exam.service.ExamConfigurationValidator();
-        var examService = validated(new com.be.exam.service.ExamService(courses, exams, questions, choices, validator));
+        var examService = validated(new com.be.exam.service.ExamService(courses, exams, questions, choices, validator, mock(com.be.exam.repository.ExamAttemptRepository.class)));
         for (String score : new String[] {"-1", "101", "50.001"}) {
             assertThatThrownBy(() -> examService.create(1L, new com.be.exam.dto.ExamCreateRequest(
                     "시험", new java.math.BigDecimal(score), 1))).isInstanceOf(ConstraintViolationException.class);

@@ -46,7 +46,16 @@ public enum ErrorCode {
     INVALID_QUESTION_ORDER("시험의 전체 문항 ID를 중복 없이 지정해야 합니다."),
     INVALID_CHOICE_ORDER("문항의 전체 선택지 ID를 중복 없이 지정해야 합니다."),
     EXAM_ORDER_LIMIT_EXCEEDED("순서 값이 재정렬 가능한 범위를 초과했습니다."),
-    EXAM_HISTORY_DELETE_CONFLICT("응시 또는 답안 이력이 있는 문항과 선택지는 삭제할 수 없습니다.");
+    EXAM_HISTORY_DELETE_CONFLICT("응시 또는 답안 이력이 있는 문항과 선택지는 삭제할 수 없습니다."),
+    EXAM_CONFIGURATION_LOCKED("응시가 시작된 시험의 구성은 변경할 수 없습니다."),
+    EXAM_ATTEMPT_NOT_FOUND("시험 응시 내역을 찾을 수 없습니다."),
+    EXAM_ACCESS_DENIED("해당 시험 응시에 접근할 수 없습니다."),
+    ENROLLMENT_EXAM_NOT_EDITABLE("종료된 수강에서는 시험 활동을 할 수 없습니다."),
+    EXAM_ALREADY_PASSED("이미 합격한 시험입니다."),
+    EXAM_ATTEMPTS_EXHAUSTED("시험 응시 횟수를 모두 사용했습니다."),
+    INVALID_EXAM_ANSWER("문제 소속과 유형에 맞는 선택지를 중복 없이 지정해주세요."),
+    EXAM_ATTEMPT_ALREADY_SUBMITTED("이미 제출된 시험입니다."),
+    EXAM_ATTEMPT_NOT_SUBMITTED("아직 제출되지 않은 시험입니다.");
 
     private final String message;
 

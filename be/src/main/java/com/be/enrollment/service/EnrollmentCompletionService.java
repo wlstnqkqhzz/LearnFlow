@@ -4,6 +4,9 @@ import com.be.enrollment.dto.ContentProgressResponse;
 import com.be.enrollment.entity.Enrollment;
 import com.be.enrollment.enums.EnrollmentStatus;
 import com.be.exam.repository.ExamRepository;
+import com.be.exam.repository.ExamAttemptRepository;
+import com.be.course.repository.CourseContentRepository;
+import com.be.enrollment.repository.ContentProgressRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -13,11 +16,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-// 학습 조건 계산과 수료 판정 책임 분리; 추후 시험 제출 트랜잭션에서도 재사용
+// 콘텐츠 변경과 시험 합격 제출에서 공통으로 사용하는 최종 수료 판정
 @Service
 @RequiredArgsConstructor
 public class EnrollmentCompletionService {
     private final ExamRepository exams;
+    private final ExamAttemptRepository attempts;
+    private final CourseContentRepository contents;
+    private final ContentProgressRepository progresses;
+
+    // 시험 제출에서도 누락 진도를 0으로 포함하는 동일 요약/판정을 재사용
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void evaluate(Enrollment enrollment, LocalDateTime now) {
+        var byContent = progresses.findByEnrollmentId(enrollment.getId()).stream().collect(
+                java.util.stream.Collectors.toMap(p -> p.getCourseContent().getId(), p -> p));
+        var items = contents.findByCourseIdOrderBySortOrderAsc(enrollment.getCourse().getId()).stream()
+                .map(c -> ContentProgressResponse.from(c, byContent.get(c.getId()))).toList();
+        evaluate(enrollment, summarize(items, enrollment.getCourse().getPassingProgressRate()), now);
+    }
 
     // 미생성 진도가 0으로 채워진 전체 콘텐츠를 기준으로 필수 콘텐츠만 평균 계산
     public ProgressSummary summarize(List<ContentProgressResponse> contents, BigDecimal passingRate) {
@@ -35,7 +51,8 @@ public class EnrollmentCompletionService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void evaluate(Enrollment enrollment, ProgressSummary summary, LocalDateTime now) {
         if (enrollment.getStatus() == EnrollmentStatus.IN_PROGRESS && summary.contentConditionSatisfied()
-                && !exams.existsByCourseId(enrollment.getCourse().getId())) {
+                && (!exams.existsByCourseId(enrollment.getCourse().getId())
+                    || attempts.existsByEnrollmentIdAndSubmittedAtIsNotNullAndPassedTrue(enrollment.getId()))) {
             enrollment.completeLearning(now);
         }
     }

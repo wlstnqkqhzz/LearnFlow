@@ -29,7 +29,7 @@ class ExamManagementServiceTest {
     final ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
     final ExamAnswerRepository answers = mock(ExamAnswerRepository.class);
     final ExamConfigurationValidator validator = new ExamConfigurationValidator();
-    final ExamService examService = new ExamService(courses, exams, questions, choices, validator);
+    final ExamService examService = new ExamService(courses, exams, questions, choices, validator, attempts);
     final QuestionService service = new QuestionService(examService, questions, choices, attempts, answers, validator);
     Exam exam;
     Question question;
@@ -264,6 +264,21 @@ class ExamManagementServiceTest {
         when(questions.findByExamIdOrderBySortOrderAsc(10L)).thenReturn(List.of());
         error(() -> examService.validateConfiguration(1L), ErrorCode.INVALID_EXAM_CONFIGURATION);
         verifyNoInteractions(attempts, answers);
+    }
+
+    @Test void firstAttemptFreezesEveryManagementMutationIncludingTextAndOrder() {
+        when(attempts.existsByExamId(10L)).thenReturn(true);
+        var examPatch = new ExamPatchRequest(); examPatch.setTitle("새 제목");
+        error(() -> examService.update(1L, examPatch), ErrorCode.EXAM_CONFIGURATION_LOCKED);
+        var questionPatch = new QuestionPatchRequest(); questionPatch.setQuestionText("새 문제");
+        error(() -> service.update(1L, 1L, questionPatch), ErrorCode.EXAM_CONFIGURATION_LOCKED);
+        error(() -> service.create(1L, new QuestionCreateRequest("Q", QuestionType.SINGLE_CHOICE, BigDecimal.TEN, 2,
+                List.of(new ChoiceCreateRequest("A", true, 1)))), ErrorCode.EXAM_CONFIGURATION_LOCKED);
+        error(() -> service.reorder(1L, new QuestionOrderRequest(List.of(1L))), ErrorCode.EXAM_CONFIGURATION_LOCKED);
+        error(() -> service.createChoice(1L, 1L, new ChoiceCreateRequest("B", false, 3)), ErrorCode.EXAM_CONFIGURATION_LOCKED);
+        error(() -> service.updateChoice(1L, 1L, 101L, new ChoicePatchRequest()), ErrorCode.EXAM_CONFIGURATION_LOCKED);
+        error(() -> service.reorderChoices(1L, 1L, new ChoiceOrderRequest(List.of(101L, 100L))), ErrorCode.EXAM_CONFIGURATION_LOCKED);
+        verify(exams, never()).flush(); verify(questions, never()).flush(); verify(choices, never()).flush();
     }
 
     private void error(Runnable action, ErrorCode code) {
