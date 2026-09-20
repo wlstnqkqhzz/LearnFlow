@@ -34,7 +34,19 @@ public enum ErrorCode {
     RESIGNED_MEMBER_ASSIGNMENT("퇴사자에게 신규 교육을 배정할 수 없습니다."),
     ENROLLMENT_PROGRESS_ACCESS_DENIED("해당 수강의 학습 진도에 접근할 수 없습니다."),
     ENROLLMENT_PROGRESS_NOT_EDITABLE("종료된 수강의 학습 진도는 변경할 수 없습니다."),
-    INVALID_PROGRESS_RATE("진도율은 소수점 둘째 자리까지의 0~100 값이어야 합니다.");
+    INVALID_PROGRESS_RATE("진도율은 소수점 둘째 자리까지의 0~100 값이어야 합니다."),
+    EXAM_NOT_FOUND("해당 과정의 시험을 찾을 수 없습니다."),
+    DUPLICATE_EXAM("과정에는 시험을 하나만 생성할 수 있습니다."),
+    QUESTION_NOT_FOUND("해당 시험의 문항을 찾을 수 없습니다."),
+    QUESTION_CHOICE_NOT_FOUND("해당 문항의 선택지를 찾을 수 없습니다."),
+    INVALID_EXAM_CONFIGURATION("응시 가능한 시험 구성이 아닙니다."),
+    INVALID_QUESTION_CONFIGURATION("문제 유형에 맞는 선택지와 정답 구성이 필요합니다."),
+    DUPLICATE_QUESTION_SORT_ORDER("이미 사용 중인 문항 순서입니다."),
+    DUPLICATE_CHOICE_SORT_ORDER("이미 사용 중인 선택지 순서입니다."),
+    INVALID_QUESTION_ORDER("시험의 전체 문항 ID를 중복 없이 지정해야 합니다."),
+    INVALID_CHOICE_ORDER("문항의 전체 선택지 ID를 중복 없이 지정해야 합니다."),
+    EXAM_ORDER_LIMIT_EXCEEDED("순서 값이 재정렬 가능한 범위를 초과했습니다."),
+    EXAM_HISTORY_DELETE_CONFLICT("응시 또는 답안 이력이 있는 문항과 선택지는 삭제할 수 없습니다.");
 
     private final String message;
 

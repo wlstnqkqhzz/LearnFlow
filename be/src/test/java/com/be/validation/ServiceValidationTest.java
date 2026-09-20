@@ -149,6 +149,35 @@ class ServiceValidationTest {
         verifyNoInteractions(enrollments, contents, progresses, completion);
     }
 
+    @Test
+    void validatesExamManagementServiceBoundaries() {
+        var courses = mock(com.be.course.repository.CourseRepository.class);
+        var exams = mock(com.be.exam.repository.ExamRepository.class);
+        var questions = mock(com.be.exam.repository.QuestionRepository.class);
+        var choices = mock(com.be.exam.repository.QuestionChoiceRepository.class);
+        var validator = new com.be.exam.service.ExamConfigurationValidator();
+        var examService = validated(new com.be.exam.service.ExamService(courses, exams, questions, choices, validator));
+        for (String score : new String[] {"-1", "101", "50.001"}) {
+            assertThatThrownBy(() -> examService.create(1L, new com.be.exam.dto.ExamCreateRequest(
+                    "시험", new java.math.BigDecimal(score), 1))).isInstanceOf(ConstraintViolationException.class);
+        }
+        for (int max : new int[] {0, -1}) {
+            assertThatThrownBy(() -> examService.create(1L, new com.be.exam.dto.ExamCreateRequest(
+                    "시험", java.math.BigDecimal.TEN, max))).isInstanceOf(ConstraintViolationException.class);
+        }
+        var questionService = validated(new com.be.exam.service.QuestionService(examService, questions, choices,
+                mock(com.be.exam.repository.ExamAttemptRepository.class), mock(com.be.exam.repository.ExamAnswerRepository.class), validator));
+        for (String score : new String[] {"0", "-1", "100000", "10.001"}) {
+            assertThatThrownBy(() -> questionService.create(1L, new com.be.exam.dto.QuestionCreateRequest("문제",
+                    com.be.exam.enums.QuestionType.SINGLE_CHOICE, new java.math.BigDecimal(score), 1,
+                    java.util.List.of(new com.be.exam.dto.ChoiceCreateRequest("A", true, 1)))))
+                    .isInstanceOf(ConstraintViolationException.class);
+        }
+        assertThatThrownBy(() -> questionService.createChoice(1L, 1L,
+                new com.be.exam.dto.ChoiceCreateRequest(" ", null, 0))).isInstanceOf(ConstraintViolationException.class);
+        verifyNoInteractions(courses, exams, questions, choices);
+    }
+
     @SuppressWarnings("unchecked")
     private <T> T validated(T target) {
         ProxyFactory proxy = new ProxyFactory(target);

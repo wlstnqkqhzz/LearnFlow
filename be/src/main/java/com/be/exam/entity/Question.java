@@ -59,4 +59,22 @@ public class Question extends BaseTimeEntity {
     // 시험 내 문제 순서 (1부터 시작)
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
+
+    // 문항 및 선택지 구성은 Service에서 함께 검증한 뒤 저장
+    public static Question create(Exam exam, String text, QuestionType type, BigDecimal score, int order) {
+        Question question = new Question();
+        question.exam = exam;
+        question.update(text, type, score, order);
+        return question;
+    }
+
+    public void update(String text, QuestionType type, BigDecimal score, int order) {
+        this.questionText = text;
+        this.questionType = type;
+        this.score = score;
+        this.sortOrder = order;
+    }
+
+    // UNIQUE 충돌을 피하는 전체 순서 변경에 사용
+    public void changeSortOrder(int order) { this.sortOrder = order; }
 }

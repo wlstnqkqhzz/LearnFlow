@@ -47,4 +47,23 @@ public class QuestionChoice extends BaseTimeEntity {
     // 문제 내 선택지 순서 (1부터 시작)
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
+
+    // 소속 문항은 생성 후 변경하지 않음
+    public static QuestionChoice create(Question question, String text, boolean correct, int order) {
+        QuestionChoice choice = new QuestionChoice();
+        choice.question = question;
+        choice.update(text, correct, order);
+        return choice;
+    }
+
+    public void update(String text, boolean correct, int order) {
+        this.choiceText = text;
+        this.isCorrect = correct;
+        this.sortOrder = order;
+    }
+
+    // 정답 집합의 원자적 교체 시 사용
+    public void changeCorrect(boolean correct) { this.isCorrect = correct; }
+
+    public void changeSortOrder(int order) { this.sortOrder = order; }
 }

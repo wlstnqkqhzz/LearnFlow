@@ -49,4 +49,19 @@ public class Exam extends BaseTimeEntity {
     // 최대 시험 응시 횟수
     @Column(name = "max_attempts", nullable = false)
     private int maxAttempts;
+
+    // 소속 과정은 생성 시 고정하고 설정만 변경 가능
+    public static Exam create(Course course, String title, BigDecimal passingScore, int maxAttempts) {
+        Exam exam = new Exam();
+        exam.course = course;
+        exam.update(title, passingScore, maxAttempts);
+        return exam;
+    }
+
+    // 입력 범위 검증은 Service 경계에서 수행
+    public void update(String title, BigDecimal passingScore, int maxAttempts) {
+        this.title = title;
+        this.passingScore = passingScore;
+        this.maxAttempts = maxAttempts;
+    }
 }

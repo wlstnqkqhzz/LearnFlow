@@ -1,9 +1,11 @@
 package com.be.exam.repository;
 
 import com.be.exam.entity.Exam;
-import org.springframework.data.repository.Repository;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-// 이번 단계에서는 수료 판정에 필요한 시험 존재 여부만 제공
-public interface ExamRepository extends Repository<Exam, Long> {
+// 과정별 단일 시험 관리 및 기존 수료 판정의 존재 조회를 함께 지원
+public interface ExamRepository extends JpaRepository<Exam, Long> {
     boolean existsByCourseId(Long courseId);
+    Optional<Exam> findByCourseId(Long courseId);
 }
