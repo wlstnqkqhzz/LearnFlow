@@ -141,6 +141,17 @@ public class Enrollment extends BaseTimeEntity {
         if (status == EnrollmentStatus.IN_PROGRESS) status = EnrollmentStatus.FAILED;
     }
 
+    // 마감일 다음 날부터 미종료 수강만 만료; 배정·시작·수료 시각은 변경하지 않음
+    public boolean expireIfOverdue(LocalDate today) {
+        java.util.Objects.requireNonNull(today);
+        if ((status == EnrollmentStatus.ASSIGNED || status == EnrollmentStatus.IN_PROGRESS)
+                && dueDate.isBefore(today)) {
+            status = EnrollmentStatus.EXPIRED;
+            return true;
+        }
+        return false;
+    }
+
     // 수동 배정: 자동 규칙 참조 없이 ASSIGNED로 생성
     public static Enrollment manual(Member member, Course course, LocalDateTime assignedAt) {
         return assigned(member, course, AssignmentSource.MANUAL, null, assignedAt);

@@ -4,7 +4,8 @@
 
 직원 본인의 시험 시작, 문제 조회, 답안 저장, 제출·채점, 결과·이력 조회를 구현한다.
 Entity 필드, DB 컬럼, UNIQUE/FK/CHECK는 변경하지 않았다.
-시간 제한, 자동 제출, 랜덤 출제, 부분점수, 해설, 재교육 초기화, 만료 배치 등은 제공하지 않는다.
+시간 제한, 자동 제출, 랜덤 출제, 부분점수, 해설, 재교육 초기화는 제공하지 않는다.
+수강 자동 만료는 [수강 마감 기한 자동 만료](ENROLLMENT_EXPIRATION.md) 문서의 별도 내부 스케줄러로 처리한다.
 
 ## API
 
@@ -163,7 +164,9 @@ ExamService에 동결 검사를 추가하고 QuestionService의 각 수정 경�
 Exam/Question/QuestionChoice 컬럼이나 snapshot/version Entity를 새로 만들지 않았다.
 기존 Course 수료 기준/콘텐츠 관리 정책 자체를 동결하는 기능은 이번 범위에 추가하지 않았다.
 이미 COMPLETED인 수강은 시험 추가나 기준 변경으로 재개하지 않는다.
-dueDate 경과만으로 만료를 처리하지 않는 기존 정책도 유지한다. EXPIRED 배치는 별도 단계다.
+시험 요청 시점에 dueDate를 검사하여 즉시 만료시키지는 않는다.
+별도 스케줄러가 매일 서울 자정에 dueDate가 지난 미종료 수강을 EXPIRED로 전환한다.
+처리 지연이나 충돌로 상태 전환 전인 건은 기존 요청 정책을 따르며, EXPIRED 저장 후에는 terminal 검사로 차단된다.
 
 ## 신규 ErrorCode
 

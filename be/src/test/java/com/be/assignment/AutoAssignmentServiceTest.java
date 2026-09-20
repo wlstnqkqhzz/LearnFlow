@@ -171,6 +171,36 @@ class AutoAssignmentServiceTest {
         verify(enrollments, never()).saveAndFlush(any());
     }
 
+    @ParameterizedTest
+    @EnumSource(AssignmentSource.class)
+    void expiredEnrollmentIsPreservedAcrossAllAutomaticTriggers(AssignmentSource source) {
+        var rule = memberRules(AssignmentRuleType.ALL_EMPLOYEES);
+        var member = member(2L);
+        var existing = source == AssignmentSource.MANUAL
+                ? Enrollment.manual(member, rule.getCourse(), LocalDateTime.now(CLOCK))
+                : Enrollment.automatic(member, rule, LocalDateTime.now(CLOCK));
+        existing.startLearning(LocalDateTime.now(CLOCK).plusHours(1));
+        existing.expireIfOverdue(existing.getDueDate().plusDays(1));
+        var originalRule = existing.getAssignmentRule();
+        var originalStartedAt = existing.getStartedAt();
+        when(enrollments.findExistingForAssignment(2L, 1L)).thenReturn(Optional.of(existing));
+        when(courses.findByIdForUpdate(1L)).thenReturn(Optional.of(rule.getCourse()));
+        when(rules.findForUpdate(1L, 100L)).thenReturn(Optional.of(rule));
+        when(members.findAssignmentCandidates(null, null, null, null)).thenReturn(List.of(member));
+
+        service.assignMember(member);
+        service.assignCourse(1L);
+        service.assignRule(1L, 100L);
+
+        assertThat(existing.getStatus()).isEqualTo(EnrollmentStatus.EXPIRED);
+        assertThat(existing.getAssignmentSource()).isEqualTo(source);
+        assertThat(existing.getAssignmentRule()).isSameAs(originalRule);
+        assertThat(existing.getStartedAt()).isEqualTo(originalStartedAt);
+        assertThat(existing.getCompletedAt()).isNull();
+        verify(enrollments, never()).saveAndFlush(any());
+        verify(enrollments, never()).delete(any());
+    }
+
     @Test
     void leavingConditionAndRuleDeactivationDoNotDeleteHistory() {
         useStore();

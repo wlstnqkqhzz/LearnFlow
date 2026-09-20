@@ -3,6 +3,8 @@ package com.be.enrollment.repository;
 import com.be.enrollment.entity.Enrollment;
 import com.be.enrollment.enums.EnrollmentStatus;
 import jakarta.persistence.LockModeType;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.repository.*;
@@ -10,6 +12,17 @@ import org.springframework.data.repository.query.Param;
 
 // 읽기 응답에 필요한 단일 연관관계만 함께 로드
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
+    // 상태 변경으로 조회 집합이 줄어도 누락되지 않도록 ID 기반으로 다음 묶음을 조회
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Query("""
+            select e.id from Enrollment e
+            where e.status in :statuses and e.dueDate < :today and e.id > :afterId
+            order by e.id
+            """)
+    List<Long> findOverdueIds(@Param("statuses") List<EnrollmentStatus> statuses,
+                             @Param("today") LocalDate today, @Param("afterId") Long afterId,
+                             Pageable pageable);
+
     @Override
     @EntityGraph(attributePaths = {"member", "course", "assignmentRule"})
     Optional<Enrollment> findById(Long id);
