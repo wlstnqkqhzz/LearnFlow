@@ -34,3 +34,6 @@ build/
 
 ### Local configuration ###
 src/main/resources/application-local.yaml
+
+### Local documentation ###
+*.md
