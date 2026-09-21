@@ -1,0 +1,42 @@
+/* 기존 Dashboard 토큰과 스타일은 유지하고 인증 화면 스타일만 추가한다. */
+.auth-screen { min-height: 100svh; display: grid; place-items: center; padding: var(--space-5); }
+.login-layout { width: min(880px, 100%); display: grid; grid-template-columns: 1fr 400px; gap: 64px; align-items: center; }
+.login-logo { padding: 0; margin-bottom: var(--space-6); justify-content: flex-start; }
+.login-logo .brand-copy { display: flex; }
+.login-brand h1 { font-size: 24px; letter-spacing: -.5px; line-height: 1.5; margin-bottom: var(--space-3); word-break: keep-all; }
+.login-brand > p { color: var(--text-secondary); font-size: 14px; line-height: 1.9; }
+.login-card { padding: var(--space-6); }
+.login-card h2 { font-size: 20px; }
+.auth-description { color: var(--text-secondary); font-size: 12px; margin-top: var(--space-2); }
+.login-card form { display: grid; gap: var(--space-4); margin-top: var(--space-5); }
+.auth-field { display: grid; gap: var(--space-2); }
+.auth-field label { font-size: 12px; font-weight: 600; }
+.auth-field input { min-width: 0; width: 100%; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); background: var(--surface); }
+.auth-field input::placeholder { color: var(--text-muted); }
+.auth-field input:disabled { background: var(--background); }
+.auth-button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: var(--space-2) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; font-weight: 600; }
+.auth-button:hover { background: var(--primary-soft); }
+.primary-button { background: var(--primary-text); border-color: var(--primary-text); color: var(--surface); }
+.primary-button:hover { background: var(--text-primary); border-color: var(--text-primary); }
+.auth-button:disabled { opacity: .65; cursor: not-allowed; }
+.auth-error { color: var(--danger-text); background: var(--danger-soft); padding: var(--space-3); border-radius: var(--radius-sm); font-size: 12px; }
+.login-help { border-top: 1px solid var(--border); padding-top: var(--space-4); margin-top: var(--space-5); color: var(--text-muted); font-size: 11px; line-height: 1.8; }
+.auth-loading { display: grid; justify-items: center; gap: var(--space-4); color: var(--text-secondary); }
+.message-card { width: min(460px, 100%); padding: var(--space-6); text-align: center; }
+.message-card h1 { margin: var(--space-4) 0 var(--space-2); }
+.message-card p { color: var(--text-secondary); }
+.message-code { font-size: 28px; color: var(--primary-text); font-weight: 700; }
+.auth-actions { display: flex; gap: var(--space-3); justify-content: center; margin-top: var(--space-5); flex-wrap: wrap; }
+.placeholder-email { margin-top: var(--space-3); overflow-wrap: anywhere; }
+.compact-logout { display: none; }
+@media (max-width: 850px) { .compact-logout { display: inline-flex; } }
+@media (max-width: 900px) {
+  .login-layout { grid-template-columns: minmax(0, 400px); justify-content: center; gap: var(--space-5); }
+  .login-brand h1, .login-brand > p { display: none; }
+  .login-logo { margin-bottom: 0; }
+}
+@media (max-width: 420px) {
+  .auth-screen { padding: var(--space-4); }
+  .login-card, .message-card { padding: var(--space-5); }
+  .header-tools .notification-button { display: none; }
+}
