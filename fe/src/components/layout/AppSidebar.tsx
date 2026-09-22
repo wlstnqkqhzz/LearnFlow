@@ -7,7 +7,7 @@ import { Link, NavLink } from 'react-router-dom'
 const menu: { label: string; icon: IconName; to?: string }[] = [
   { label: '대시보드', icon: 'dashboard', to: '/admin/dashboard' }, { label: '회원 관리', icon: 'members', to: '/admin/members' },
   { label: '조직 관리', icon: 'organization', to: '/admin/departments' }, { label: '직무 관리', icon: 'briefcase', to: '/admin/job-positions' },
-  { label: '교육과정', icon: 'book' }, { label: '교육 배정', icon: 'clipboard' },
+  { label: '교육과정', icon: 'book', to: '/admin/courses' }, { label: '교육 배정', icon: 'clipboard' },
   { label: '수강 현황', icon: 'chart' }, { label: '시험 관리', icon: 'exam' },
 ]
 
