@@ -1,0 +1,63 @@
+/* 관리 화면에만 적용한다. 기존 대시보드 및 인증 스타일은 유지한다. */
+.management-page { padding: var(--space-5); display: grid; gap: var(--space-5); }
+.management-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.management-heading h2 { font-size: 17px; }
+.management-heading p, .admin-hint { color: var(--text-secondary); font-size: 12px; margin-top: var(--space-1); }
+.admin-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); padding: var(--space-2) var(--space-3); font-size: 12px; cursor: pointer; white-space: nowrap; }
+.admin-button:hover { background: var(--primary-soft); }
+.admin-button.primary-button { background: var(--primary-text); border-color: var(--primary-text); color: white; }
+.admin-button.primary-button:hover { background: var(--text-primary); }
+.admin-button:disabled { opacity: .55; cursor: not-allowed; }
+.danger-button { color: var(--danger-text); border-color: var(--danger); }
+.admin-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: var(--space-3); }
+.admin-field { display: grid; gap: var(--space-2); font-size: 12px; font-weight: 600; min-width: 0; }
+.admin-field input, .admin-field select, .admin-pagination select { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); min-width: 0; max-width: 100%; font: inherit; font-weight: 400; color: var(--text-primary); background: var(--surface); min-height: 36px; }
+.admin-field input:read-only, .admin-field input:disabled, .admin-field select:disabled { background: var(--background); color: var(--text-secondary); }
+.admin-field small { font-weight: 400; color: var(--text-muted); }
+.admin-toolbar .admin-field { min-width: 120px; max-width: 230px; }
+.admin-toolbar .search-field { flex: 1; min-width: 180px; max-width: 320px; }
+.admin-table-surface { overflow: hidden; }
+.admin-table { min-width: 680px; }
+.admin-table thead { background: var(--background); }
+.admin-table td, .admin-table th { padding: var(--space-3) var(--space-4); }
+.admin-table tbody tr + tr { border-top: 1px solid var(--border); }
+.admin-table td { overflow-wrap: anywhere; max-width: 260px; }
+.admin-table th { max-width: 280px; overflow-wrap: anywhere; }
+.member-table { min-width: 1000px; }
+.table-secondary { display: block; color: var(--text-muted); font-size: 11px; font-weight: 400; margin-top: 2px; }
+.row-actions, .role-badges { display: inline-flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.admin-table .row-actions { justify-content: end; flex-wrap: nowrap; }
+.admin-actions { display: flex; gap: var(--space-2); justify-content: end; flex-wrap: wrap; margin-top: var(--space-4); }
+.admin-state { display: grid; gap: var(--space-4); justify-items: center; padding: var(--space-6); color: var(--text-secondary); text-align: center; }
+.admin-error, .admin-success { padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); font-size: 12px; }
+.admin-error { background: var(--danger-soft); color: var(--danger-text); }
+.admin-success { background: var(--success-soft); color: var(--success-text); }
+.admin-modal { width: min(580px, calc(100% - 32px)); max-height: calc(100svh - 48px); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); background: var(--surface); color: var(--text-primary); overflow-y: auto; }
+.admin-modal::backdrop { background: rgb(18 48 82 / 28%); }
+.modal-heading { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5); }
+.modal-heading h2 { font-size: 17px; }
+.admin-form { display: grid; gap: var(--space-4); }
+.admin-form fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: var(--space-4); min-width: 0; }
+.admin-form .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.confirm-description { line-height: 1.8; margin-bottom: var(--space-4); }
+.admin-pagination { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); border-top: 1px solid var(--border); padding: var(--space-3) var(--space-4); font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
+.member-summary { padding: var(--space-5); display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.member-summary p { color: var(--text-secondary); margin-top: var(--space-1); overflow-wrap: anywhere; }
+.member-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+.detail-section { padding: var(--space-5); min-width: 0; }
+.detail-section > h2 { margin-bottom: var(--space-4); }
+.detail-divider { margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--border); }
+.role-options { display: grid; gap: var(--space-3); border: 0; padding: 0; margin: var(--space-5) 0 0; }
+.role-options label { display: flex; align-items: center; gap: var(--space-2); }
+.role-options input { accent-color: var(--primary-text); width: 16px; height: 16px; }
+.role-options small { color: var(--text-muted); }
+.status-summary { margin: var(--space-4) 0; }
+@media (max-width: 1000px) { .member-detail-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) {
+  .management-page { padding: var(--space-3); }
+  .management-heading { align-items: start; flex-direction: column; }
+  .admin-toolbar .admin-field { max-width: 100%; }
+  .admin-form .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-modal { padding: var(--space-4); }
+  .detail-section { padding: var(--space-4); }
+}
