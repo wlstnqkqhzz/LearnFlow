@@ -19,6 +19,9 @@ import { MemberDetailPage } from './pages/admin/MemberDetailPage'
 import { CoursesPage } from './pages/admin/CoursesPage'
 import { CourseCreatePage } from './pages/admin/CourseCreatePage'
 import { CourseDetailPage } from './pages/admin/CourseDetailPage'
+import { EnrollmentsPage } from './pages/admin/EnrollmentsPage'
+import { ExamsPage } from './pages/admin/ExamsPage'
+import { ExamPage } from './pages/admin/ExamPage'
 
 export default function App() {
   return (
@@ -35,7 +38,11 @@ export default function App() {
           <Route path="/admin/members/:memberId" element={<AppLayout title="회원 상세" subtitle="회원 정보와 재직 상태를 관리합니다"><MemberDetailPage /></AppLayout>} />
           <Route path="/admin/courses" element={<AppLayout title="교육과정" subtitle="교육과정을 생성하고 운영 상태를 관리합니다"><CoursesPage /></AppLayout>} />
           <Route path="/admin/courses/new" element={<AppLayout title="교육과정 만들기" subtitle="교육과정 기본 정보를 입력합니다"><CourseCreatePage /></AppLayout>} />
-          <Route path="/admin/courses/:courseId" element={<AppLayout title="교육과정 상세" subtitle="기본 정보와 콘텐츠를 관리합니다"><CourseDetailPage /></AppLayout>} />
+          <Route path="/admin/courses/:courseId" element={<AppLayout title="교육과정 상세" subtitle="기본 정보, 콘텐츠, 배정 규칙과 시험을 관리합니다"><CourseDetailPage /></AppLayout>} />
+          <Route path="/admin/assignments" element={<AppLayout title="교육 배정" subtitle="교육과정을 선택해 자동 배정 규칙을 관리합니다"><CoursesPage assignmentMode /></AppLayout>} />
+          <Route path="/admin/enrollments" element={<AppLayout title="수강 현황" subtitle="과정별 배정 및 학습 상태를 조회합니다"><EnrollmentsPage /></AppLayout>} />
+          <Route path="/admin/exams" element={<AppLayout title="시험 관리" subtitle="과정별 시험과 문항을 관리합니다"><ExamsPage /></AppLayout>} />
+          <Route path="/admin/courses/:courseId/exam" element={<AppLayout title="시험 관리" subtitle="시험 기본정보와 문항을 구성합니다"><ExamPage /></AppLayout>} />
         </Route>
         <Route element={<RoleRoute role="EMPLOYEE" />}><Route path="/employee" element={<PlaceholderPage title="직원 학습 공간" />} /></Route>
         <Route element={<RoleRoute role="INSTRUCTOR" />}><Route path="/instructor" element={<PlaceholderPage title="강사 교육 공간" />} /></Route>

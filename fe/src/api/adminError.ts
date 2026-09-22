@@ -21,6 +21,23 @@ const messages: Record<string, string> = {
   INVALID_CONTENT_ORDER: '현재 과정의 모든 콘텐츠를 중복 없이 포함해야 합니다.',
   CONTENT_ORDER_LIMIT_EXCEEDED: '콘텐츠 순서를 저장할 수 없습니다. 기존 순서를 정리한 뒤 다시 시도해 주세요.',
   DATA_CONFLICT: '다른 데이터에서 사용 중이므로 삭제하거나 변경할 수 없습니다.',
+  ASSIGNMENT_RULE_NOT_FOUND: '배정 규칙을 찾을 수 없습니다.', ENROLLMENT_NOT_FOUND: '수강 내역을 찾을 수 없습니다.',
+  INVALID_ASSIGNMENT_RULE_TARGET: '배정 유형에 맞는 대상 조건을 입력해 주세요.', INVALID_NEW_EMPLOYEE_DAYS: '신입사원 대상 기간은 1~32767일이어야 합니다.',
+  DUPLICATE_ENROLLMENT: '이미 해당 교육과정에 배정된 직원입니다.', COURSE_NOT_OPEN_FOR_ASSIGNMENT: '운영 중인 교육과정에만 직원을 배정할 수 있습니다.',
+  RESIGNED_MEMBER_ASSIGNMENT: '퇴사한 직원은 교육과정에 배정할 수 없습니다.',
+  EXAM_NOT_FOUND: '해당 과정에 등록된 시험이 없습니다.', DUPLICATE_EXAM: '과정에는 시험을 하나만 등록할 수 있습니다.',
+  QUESTION_NOT_FOUND: '문항을 찾을 수 없습니다.', QUESTION_CHOICE_NOT_FOUND: '선택지를 찾을 수 없습니다.',
+  INVALID_EXAM_CONFIGURATION: '문항과 정답 구성을 완성해야 응시할 수 있습니다.',
+  INVALID_QUESTION_CONFIGURATION: '문항 유형에 맞는 선택지와 정답을 구성해 주세요.',
+  DUPLICATE_QUESTION_SORT_ORDER: '이미 사용 중인 문항 순서입니다.', DUPLICATE_CHOICE_SORT_ORDER: '이미 사용 중인 선택지 순서입니다.',
+  INVALID_QUESTION_ORDER: '현재 시험의 모든 문항을 중복 없이 포함해야 합니다.', INVALID_CHOICE_ORDER: '현재 문항의 모든 선택지를 중복 없이 포함해야 합니다.',
+  EXAM_HISTORY_DELETE_CONFLICT: '응시 이력이 있는 문항과 선택지는 삭제할 수 없습니다.',
+  EXAM_CONFIGURATION_LOCKED: '이미 시험 응시가 시작되어 시험 구성을 변경할 수 없습니다.',
+}
+export function adminErrorCode(error: unknown) {
+  if (!axios.isAxiosError(error)) return undefined
+  const code: unknown = error.response?.data?.code
+  return typeof code === 'string' ? code : undefined
 }
 export function adminErrorMessage(error: unknown) {
   if (axios.isAxiosError(error)) {

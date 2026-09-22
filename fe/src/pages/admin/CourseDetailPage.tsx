@@ -10,6 +10,8 @@ import { useRemote } from '../../hooks/useRemote.ts'
 import { CourseContentsSection } from './CourseContentsSection.tsx'
 import { CourseForm } from './CourseForm.tsx'
 import { coursePeriod, nextCourseStatus, openValidation } from './courseUtils.ts'
+import { AssignmentRulesSection } from './AssignmentRulesSection.tsx'
+import { CourseExamSection } from './CourseExamSection.tsx'
 
 export function CourseDetailPage() {
   const { courseId } = useParams()
@@ -41,7 +43,7 @@ function CourseDetail({ id }: { id: number }) {
   }
 
   return <div className="management-page">
-    <PageHeader title="교육과정 상세" description="기본 정보와 학습 콘텐츠를 관리합니다."><Link className="admin-button" to="/admin/courses">목록으로</Link></PageHeader>
+    <PageHeader title="교육과정 상세" description="기본 정보, 콘텐츠, 배정 규칙과 시험을 관리합니다."><Link className="admin-button" to="/admin/courses">목록으로</Link></PageHeader>
     {location.state?.created && <p className="admin-success" role="status">교육과정이 초안으로 등록되었습니다.</p>}
     {query.loading ? <LoadingState /> : query.error ? <ErrorState message={query.error} retry={query.reload} /> : course && <>
       <section className="course-summary surface"><div><div className="row-actions"><CourseTypeBadge type={course.courseType} /><CourseStatusBadge status={course.status} /></div><h2>{course.title}</h2><p>{course.instructorName ?? '강사 미지정'} · {coursePeriod(course)}</p></div>{next && <button type="button" className={`admin-button ${next === 'OPEN' ? 'primary-button' : 'danger-button'}`} disabled={action.pending} onClick={requestStatus}>{next === 'OPEN' ? '과정 오픈' : '과정 종료'}</button>}</section>
@@ -51,6 +53,8 @@ function CourseDetail({ id }: { id: number }) {
         await action.run(async () => { await courseApi.update(id, request); query.reload() }, '교육과정 정보를 수정했습니다.')
       }} /></section>
       <CourseContentsSection courseId={id} />
+      <AssignmentRulesSection courseId={id} courseStatus={course.status} />
+      <CourseExamSection courseId={id} />
       {confirmStatus && <ConfirmDialog title={confirmStatus === 'OPEN' ? `“${course.title}” 과정 오픈` : `“${course.title}” 과정 종료`} description={confirmStatus === 'OPEN' ? '과정을 오픈하면 설정된 배정 규칙에 따라 대상 직원에게 교육이 자동 배정될 수 있습니다.' : '종료 후에는 운영 중 상태로 되돌릴 수 없습니다.'} label={confirmStatus === 'OPEN' ? '과정 오픈' : '과정 종료'} tone={confirmStatus === 'OPEN' ? 'primary' : 'danger'} pending={action.pending} error={action.error} onClose={() => setConfirmStatus(null)} onConfirm={() => void changeStatus()} />}
     </>}
   </div>
