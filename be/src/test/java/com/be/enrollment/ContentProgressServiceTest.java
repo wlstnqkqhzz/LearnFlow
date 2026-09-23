@@ -137,10 +137,31 @@ class ContentProgressServiceTest {
         assertThat(result.contents()).allSatisfy(c -> {
             assertThat(c.progressRate()).isEqualByComparingTo("0");
             assertThat(c.completedAt()).isNull();
+            assertThat(c.contentUrl()).isEqualTo("https://example.com/video");
         });
+        assertThat(result.courseTitle()).isEqualTo("교육");
+        assertThat(result.courseType()).isEqualTo(com.be.course.enums.CourseType.MANDATORY);
+        assertThat(result.courseStartDate()).isEqualTo(course.getStartDate());
+        assertThat(result.courseEndDate()).isEqualTo(course.getEndDate());
+        assertThat(result.dueDate()).isEqualTo(enrollment.getDueDate());
+        assertThat(result.assignedAt()).isEqualTo(enrollment.getAssignedAt());
         assertThat(result.progressRate()).isEqualByComparingTo("0");
         verify(progresses, never()).saveAndFlush(any());
         verify(enrollments, never()).findForProgressUpdate(anyLong());
+    }
+
+    @Test void responseIncludesOptionalInstructorAndHandlesMissingInstructor() {
+        var without = service.get(10L, OWNER);
+        assertThat(without.instructorId()).isNull();
+        assertThat(without.instructorName()).isNull();
+
+        var instructor = AssignmentFixtures.member(8L);
+        course.update(course.getTitle(), "과정 설명", course.getCourseType(), course.getStartDate(), course.getEndDate(),
+                course.getPassingProgressRate(), instructor);
+        var with = service.get(10L, OWNER);
+        assertThat(with.courseDescription()).isEqualTo("과정 설명");
+        assertThat(with.instructorId()).isEqualTo(8L);
+        assertThat(with.instructorName()).isEqualTo("직원8");
     }
 
     @Test void otherEmployeeCannotReadOrWriteAdminCanOnlyReadOthers() {

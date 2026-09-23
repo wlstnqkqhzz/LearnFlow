@@ -74,7 +74,14 @@ class ContentProgressApiTest {
 
     @Test void ownerReadsAndUpdatesWithConsistentDto() throws Exception {
         mvc.perform(get(READ).with(as(2, Role.EMPLOYEE))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.courseTitle").value("교육"))
+                .andExpect(jsonPath("$.courseType").value("MANDATORY"))
+                .andExpect(jsonPath("$.dueDate").value("2026-10-19"))
+                .andExpect(jsonPath("$.instructorId").isEmpty())
                 .andExpect(jsonPath("$.contents[0].progressRate").value(0))
+                .andExpect(jsonPath("$.contents[0].title").value("콘텐츠1"))
+                .andExpect(jsonPath("$.contents[0].contentType").value("VIDEO"))
+                .andExpect(jsonPath("$.contents[0].contentUrl").value("https://example.com/video"))
                 .andExpect(jsonPath("$.contents[0].sortOrder").value(1))
                 .andExpect(jsonPath("$.contents[0].required").value(true))
                 .andExpect(jsonPath("$.status").value("ASSIGNED"));

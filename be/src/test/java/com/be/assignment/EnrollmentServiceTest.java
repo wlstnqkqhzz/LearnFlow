@@ -48,6 +48,9 @@ class EnrollmentServiceTest {
         assertThat(result.status()).isEqualTo(EnrollmentStatus.ASSIGNED);
         assertThat(result.assignmentSource()).isEqualTo(AssignmentSource.MANUAL);
         assertThat(result.assignmentRuleId()).isNull();
+        assertThat(result.courseType()).isEqualTo(com.be.course.enums.CourseType.MANDATORY);
+        assertThat(result.courseStartDate()).isEqualTo(course.getStartDate());
+        assertThat(result.courseEndDate()).isEqualTo(course.getEndDate());
         assertThat(result.dueDate()).isEqualTo(course.getEndDate());
         assertThat(result.startedAt()).isNull();
         assertThat(result.completedAt()).isNull();

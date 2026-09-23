@@ -25,6 +25,8 @@ const messages: Record<string, string> = {
   INVALID_ASSIGNMENT_RULE_TARGET: '배정 유형에 맞는 대상 조건을 입력해 주세요.', INVALID_NEW_EMPLOYEE_DAYS: '신입사원 대상 기간은 1~32767일이어야 합니다.',
   DUPLICATE_ENROLLMENT: '이미 해당 교육과정에 배정된 직원입니다.', COURSE_NOT_OPEN_FOR_ASSIGNMENT: '운영 중인 교육과정에만 직원을 배정할 수 있습니다.',
   RESIGNED_MEMBER_ASSIGNMENT: '퇴사한 직원은 교육과정에 배정할 수 없습니다.',
+  ENROLLMENT_PROGRESS_ACCESS_DENIED: '이 교육에 접근할 권한이 없습니다.',
+  ENROLLMENT_PROGRESS_NOT_EDITABLE: '현재 상태에서는 학습 진도를 변경할 수 없습니다.',
   EXAM_NOT_FOUND: '해당 과정에 등록된 시험이 없습니다.', DUPLICATE_EXAM: '과정에는 시험을 하나만 등록할 수 있습니다.',
   QUESTION_NOT_FOUND: '문항을 찾을 수 없습니다.', QUESTION_CHOICE_NOT_FOUND: '선택지를 찾을 수 없습니다.',
   INVALID_EXAM_CONFIGURATION: '문항과 정답 구성을 완성해야 응시할 수 있습니다.',

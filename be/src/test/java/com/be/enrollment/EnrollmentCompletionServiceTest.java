@@ -63,7 +63,7 @@ class EnrollmentCompletionServiceTest {
     }
 
     private ContentProgressResponse item(String rate, boolean required) {
-        return new ContentProgressResponse(1L, "콘텐츠", ContentType.LINK, required, 1,
+        return new ContentProgressResponse(1L, "콘텐츠", ContentType.LINK, "https://example.com", null, required, 1,
                 new BigDecimal(rate), null);
     }
 }

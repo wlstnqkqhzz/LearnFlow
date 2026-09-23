@@ -3,6 +3,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import './App.css'
 import './auth.css'
 import './admin.css'
+import './employee.css'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthProvider'
 import { ProtectedRoute } from './routes/ProtectedRoute'
@@ -22,6 +23,10 @@ import { CourseDetailPage } from './pages/admin/CourseDetailPage'
 import { EnrollmentsPage } from './pages/admin/EnrollmentsPage'
 import { ExamsPage } from './pages/admin/ExamsPage'
 import { ExamPage } from './pages/admin/ExamPage'
+import { EmployeeLayout } from './components/layout/EmployeeLayout'
+import { LearningPage } from './pages/employee/LearningPage'
+import { LearningDetailPage } from './pages/employee/LearningDetailPage'
+import { ContentLearningPage } from './pages/employee/ContentLearningPage'
 
 export default function App() {
   return (
@@ -44,7 +49,12 @@ export default function App() {
           <Route path="/admin/exams" element={<AppLayout title="시험 관리" subtitle="과정별 시험과 문항을 관리합니다"><ExamsPage /></AppLayout>} />
           <Route path="/admin/courses/:courseId/exam" element={<AppLayout title="시험 관리" subtitle="시험 기본정보와 문항을 구성합니다"><ExamPage /></AppLayout>} />
         </Route>
-        <Route element={<RoleRoute role="EMPLOYEE" />}><Route path="/employee" element={<PlaceholderPage title="직원 학습 공간" />} /></Route>
+        <Route element={<RoleRoute role="EMPLOYEE" />}>
+          <Route path="/employee" element={<Navigate to="/employee/learning" replace />} />
+          <Route path="/employee/learning" element={<EmployeeLayout title="내 교육" subtitle="배정된 교육을 확인하고 학습을 이어갈 수 있습니다."><LearningPage /></EmployeeLayout>} />
+          <Route path="/employee/learning/:enrollmentId" element={<EmployeeLayout title="교육 상세" subtitle="학습 현황과 콘텐츠를 확인합니다."><LearningDetailPage /></EmployeeLayout>} />
+          <Route path="/employee/learning/:enrollmentId/content/:contentId" element={<EmployeeLayout title="콘텐츠 학습" subtitle="학습 자료를 열고 진도를 저장합니다."><ContentLearningPage /></EmployeeLayout>} />
+        </Route>
         <Route element={<RoleRoute role="INSTRUCTOR" />}><Route path="/instructor" element={<PlaceholderPage title="강사 교육 공간" />} /></Route>
         <Route path="/403" element={<ForbiddenPage />} />
       </Route>

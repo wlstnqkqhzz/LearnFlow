@@ -81,8 +81,13 @@ public class ContentProgressService {
 
     private EnrollmentProgressResponse response(Enrollment enrollment, List<ContentProgressResponse> items,
             EnrollmentCompletionService.ProgressSummary summary) {
-        return new EnrollmentProgressResponse(enrollment.getId(), enrollment.getCourse().getId(), enrollment.getStatus(),
-                summary.progressRate(), enrollment.getCourse().getPassingProgressRate(), summary.contentConditionSatisfied(),
-                enrollment.getStartedAt(), enrollment.getCompletedAt(), items);
+        var course = enrollment.getCourse();
+        var instructor = course.getInstructor();
+        return new EnrollmentProgressResponse(enrollment.getId(), enrollment.getStatus(), enrollment.getDueDate(),
+                enrollment.getAssignedAt(), enrollment.getStartedAt(), enrollment.getCompletedAt(),
+                course.getId(), course.getTitle(), course.getDescription(), course.getCourseType(),
+                course.getStartDate(), course.getEndDate(),
+                instructor == null ? null : instructor.getId(), instructor == null ? null : instructor.getName(),
+                summary.progressRate(), course.getPassingProgressRate(), summary.contentConditionSatisfied(), items);
     }
 }
