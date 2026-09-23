@@ -5,7 +5,9 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
 import { AxiosError } from 'axios'
-import { apiClient } from '../src/api/client.ts'
+import { apiClient, publicClient } from '../src/api/client.ts'
+import { authSession } from '../src/auth/authSession.ts'
+import { authStorage } from '../src/auth/authStorage.ts'
 import { employeeExamApi } from '../src/api/employeeExamApi.ts'
 import { createAnswerSession } from '../src/pages/employee/answerSession.ts'
 import { examAction, examErrorMessage, scoreLabel, selectChoice, submissionDescription } from '../src/pages/employee/employeeExamUtils.ts'
@@ -25,6 +27,72 @@ function capture(data) {
 }
 function deferred() { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no }); return { promise, resolve, reject } }
 function conflict() { return new AxiosError('private trace', 'CONFLICT', undefined, undefined, { status: 409, data: { code: 'EXAM_ATTEMPT_ALREADY_SUBMITTED', message: 'private trace' }, headers: {}, config: {} }) }
+
+// 실제 Axios interceptor + 시험 API + 저장 큐를 연결한다. 서버와 저장소만 대체한다.
+for (const refreshSucceeds of [true, false]) {
+  await test(`시험 답안 저장 중 Refresh ${refreshSucceeds ? '성공 시 회전 후 저장·제출' : '실패 시 인증 정리·제출 차단'}`, async () => {
+    const storage = new Map()
+    const previousStorage = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage')
+    Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: {
+      getItem: key => storage.get(key) ?? null,
+      setItem: (key, value) => storage.set(key, value),
+      removeItem: key => storage.delete(key),
+    } })
+    const expiresAt = Math.floor(Date.now() / 1000) + 3600
+    const pair = suffix => ({
+      accessToken: `test.${Buffer.from(JSON.stringify({ tokenType: 'ACCESS', memberId: 1, email: 'test@example.com', roles: ['EMPLOYEE'], exp: expiresAt, suffix })).toString('base64url')}.test`,
+      refreshToken: `test-refresh-${suffix}`, tokenType: 'Bearer', accessTokenExpiresInSeconds: 3600, refreshTokenExpiresInSeconds: 7200,
+    })
+    const events = []
+    const oldApiAdapter = apiClient.defaults.adapter, oldPublicAdapter = publicClient.defaults.adapter
+    try {
+      authSession.clear()
+      authSession.accept(pair('old'), authSession.getGeneration())
+      publicClient.defaults.adapter = async config => {
+        events.push('refresh')
+        assert.equal(config.url, '/auth/refresh')
+        assert.equal(JSON.parse(config.data).refreshToken, 'test-refresh-old')
+        if (!refreshSucceeds) throw new AxiosError('expired', undefined, config, undefined, { config, status: 401, data: {}, headers: {} })
+        return { config, status: 200, data: pair('new'), headers: {}, statusText: '' }
+      }
+      apiClient.defaults.adapter = async config => {
+        if (config.method === 'put') {
+          assert.equal(config.url, '/exam-attempts/71/answers/91')
+          assert.deepEqual(JSON.parse(config.data), { selectedChoiceIds: [95, 96] })
+          events.push(config._retry ? 'saved' : 'expired-save')
+          if (!config._retry) throw new AxiosError('expired', undefined, config, undefined, { config, status: 401, data: {}, headers: {} })
+        } else {
+          assert.equal(config.url, '/exam-attempts/71/submit')
+          events.push('submit')
+        }
+        assert.equal(config.headers.get('Authorization'), `Bearer ${pair('new').accessToken}`)
+        return { config, status: 200, data: result, headers: {}, statusText: '' }
+      }
+      const session = createAnswerSession(paper, {
+        save: (id, ids) => employeeExamApi.saveAnswer(71, id, ids),
+        submit: () => employeeExamApi.submit(71),
+      })
+      session.change(91, [95, 96])
+      if (refreshSucceeds) {
+        assert.equal((await session.submit()).attemptId, 71)
+        assert.deepEqual(events, ['expired-save', 'refresh', 'saved', 'submit'])
+        assert.deepEqual(session.getSnapshot().answers[91], [95, 96])
+        assert.equal(authStorage.read().refreshToken, 'test-refresh-new')
+      } else {
+        await assert.rejects(session.submit())
+        assert.deepEqual(events, ['expired-save', 'refresh'])
+        assert.equal(authStorage.read(), null)
+        assert.equal(authSession.getSnapshot().user, null)
+      }
+    } finally {
+      authSession.clear()
+      apiClient.defaults.adapter = oldApiAdapter
+      publicClient.defaults.adapter = oldPublicAdapter
+      if (previousStorage) Object.defineProperty(globalThis, 'sessionStorage', previousStorage)
+      else delete globalThis.sessionStorage
+    }
+  })
+}
 
 await test('직원 시험 6개 API는 기존 Endpoint와 선택 ID Payload만 사용', async () => {
   const calls = capture(attempt)

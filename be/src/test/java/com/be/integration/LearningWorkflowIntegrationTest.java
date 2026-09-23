@@ -333,6 +333,37 @@ class LearningWorkflowIntegrationTest {
         }
     }
 
+    @Test
+    void resumedAttemptKeepsAnswersButRetryStartsBlankAndCanComplete() {
+        var scenario = prepare(true, true, false);
+        long enrollmentId = scenario.enrollment().getId();
+        var first = attemptService.start(enrollmentId, scenario.principal()).attempt();
+        var question = questionRows.values().iterator().next();
+        long correctId = choiceRows.values().stream()
+                .filter(c -> c.getQuestion() == question && c.isCorrect()).findFirst().orElseThrow().getId();
+        attemptService.saveAnswer(first.attemptId(), question.getId(), scenario.principal(), new AnswerSaveRequest(List.of(correctId)));
+
+        var resumed = attemptService.start(enrollmentId, scenario.principal()).attempt();
+        assertThat(resumed.attemptId()).isEqualTo(first.attemptId());
+        assertThat(resumed.attemptNumber()).isEqualTo(1);
+        assertThat(attemptService.paper(resumed.attemptId(), scenario.principal()).questions())
+                .filteredOn(q -> q.questionId().equals(question.getId()))
+                .singleElement().satisfies(q -> assertThat(q.selectedChoiceIds()).containsExactly(correctId));
+        assertThat(attemptService.submit(first.attemptId(), scenario.principal()).passed()).isFalse();
+
+        var retry = attemptService.start(enrollmentId, scenario.principal()).attempt();
+        assertThat(retry.attemptId()).isNotEqualTo(first.attemptId());
+        assertThat(retry.attemptNumber()).isEqualTo(2);
+        assertThat(attemptService.paper(retry.attemptId(), scenario.principal()).questions())
+                .allSatisfy(q -> assertThat(q.selectedChoiceIds()).isEmpty());
+        learn(scenario, "100");
+        answerCorrectly(retry.attemptId(), scenario);
+        assertThat(attemptService.submit(retry.attemptId(), scenario.principal()).passed()).isTrue();
+        assertThat(progressService.get(enrollmentId, scenario.principal()).status()).isEqualTo(EnrollmentStatus.COMPLETED);
+        assertThat(attemptService.history(enrollmentId, scenario.principal())).hasSize(2);
+        assertThat(attemptService.result(first.attemptId(), scenario.principal()).score()).isEqualByComparingTo("33.33");
+    }
+
     private Scenario prepare(boolean withExam, boolean withContent, boolean withInstructor) {
         long departmentId = departmentService.create(new DepartmentCreateRequest("DEV", "개발", null)).id();
         long positionId = positionService.create(new JobPositionCreateRequest("DEV", "개발자")).id();

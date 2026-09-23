@@ -12,10 +12,23 @@
 **/dist/
 
 # Generated test reports and TypeScript cache
+# Keep test source files (including *.test.mjs) tracked.
 coverage/
 test-results/
 playwright-report/
+blob-report/
+.nyc_output/
 *.tsbuildinfo
+
+# Frontend tool caches
+.vite/
+.vite-temp/
+.eslintcache
+
+# JVM crash reports and heap dumps
+hs_err_pid*.log
+replay_pid*.log
+*.hprof
 
 # Expo / React Native
 **/.expo/

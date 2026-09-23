@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
 import { apiClient } from '../src/api/client.ts'
 import { examApi, questionApi } from '../src/api/examApi.ts'
+import { createAdditionalChoices } from '../src/pages/admin/createAdditionalChoices.ts'
 import { moveQuestion, questionTypes, totalQuestionScore, validateAnswers } from '../src/pages/admin/examUtils.ts'
 
 function capture(data) {
@@ -14,6 +15,22 @@ function capture(data) {
   return calls
 }
 function body(call) { return call.data ? JSON.parse(call.data) : undefined }
+
+await test('삭제로 순서가 1,3인 문항도 새 선택지를 충돌 없이 추가한다', async () => {
+  const existing = [{ choiceId: 101, sortOrder: 1 }, { choiceId: 102, sortOrder: 3 }]
+  const orders = new Set(existing.map(choice => choice.sortOrder))
+  apiClient.defaults.adapter = async config => {
+    assert.equal(config.url, '/courses/7/exam/questions/11/choices')
+    const data = body(config)
+    assert.equal(orders.has(data.sortOrder), false, '기존 선택지 sort_order UNIQUE 충돌')
+    orders.add(data.sortOrder)
+    return { config, data: { ...data, choiceId: 100 + orders.size }, status: 201, statusText: '', headers: {} }
+  }
+  const created = await createAdditionalChoices(7, 11, existing, [{ text: ' C ' }, { text: 'D' }])
+  assert.deepEqual(created.map(choice => choice.sortOrder), [4, 5])
+  assert.deepEqual(created.map(choice => choice.choiceText), ['C', 'D'])
+  assert.ok(created.every(choice => choice.correct === false))
+})
 
 const exam = { examId: 4, courseId: 7, title: '정보보안 최종 평가', passingScore: 80, maxAttempts: 3, questionCount: 2, totalQuestionScore: 30 }
 const questions = [

@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { adminErrorCode, adminErrorMessage } from '../../api/adminError.ts'
 import { questionApi } from '../../api/examApi.ts'
-import type { AdminQuestion, AdminQuestionChoice, QuestionType } from '../../api/examTypes.ts'
+import type { AdminQuestion, QuestionType } from '../../api/examTypes.ts'
 import { Feedback, SubmitButton } from '../../components/admin/AdminUI.tsx'
 import { Modal } from '../../components/admin/Modal.tsx'
 import { questionTypes, validateAnswers } from './examUtils.ts'
+import { createAdditionalChoices } from './createAdditionalChoices.ts'
 
 type ChoiceDraft = { id?: number; text: string; correct: boolean; sortOrder: number }
 const defaults = (type: QuestionType): ChoiceDraft[] => type === 'TRUE_FALSE'
@@ -60,8 +61,7 @@ export function QuestionModal({ courseId, question, nextOrder, onClose, onSaved,
       const before = question.choices.find(item => item.choiceId === choice.id)!
       if (before.choiceText !== choice.text.trim()) await questionApi.updateChoice(courseId, question.questionId, choice.id!, { choiceText: choice.text.trim() })
     }
-    const created: AdminQuestionChoice[] = []
-    for (const choice of choices.filter(choice => !choice.id)) created.push(await questionApi.createChoice(courseId, question.questionId, { choiceText: choice.text.trim(), correct: false, sortOrder: question.choices.length + created.length + 1 }))
+    const created = await createAdditionalChoices(courseId, question.questionId, question.choices, choices.filter(choice => !choice.id))
     const ids = choices.map(choice => choice.id ?? created.shift()!.choiceId)
     const correctChoiceIds = ids.filter((_, index) => choices[index].correct)
     if (type === 'TRUE_FALSE' && question.questionType !== 'TRUE_FALSE') {
