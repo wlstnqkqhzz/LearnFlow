@@ -4,6 +4,9 @@ import './App.css'
 import './auth.css'
 import './admin.css'
 import './employee.css'
+import './employee-exam.css'
+import { EmployeeExamPage } from './pages/employee/EmployeeExamPage'
+import { EmployeeExamResultPage } from './pages/employee/EmployeeExamResultPage'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthProvider'
 import { ProtectedRoute } from './routes/ProtectedRoute'
@@ -50,6 +53,8 @@ export default function App() {
           <Route path="/admin/courses/:courseId/exam" element={<AppLayout title="시험 관리" subtitle="시험 기본정보와 문항을 구성합니다"><ExamPage /></AppLayout>} />
         </Route>
         <Route element={<RoleRoute role="EMPLOYEE" />}>
+          <Route path="/employee/learning/:enrollmentId/exam/:attemptId" element={<EmployeeLayout title="시험 응시"><EmployeeExamPage /></EmployeeLayout>} />
+          <Route path="/employee/learning/:enrollmentId/exam/:attemptId/result" element={<EmployeeLayout title="시험 결과"><EmployeeExamResultPage /></EmployeeLayout>} />
           <Route path="/employee" element={<Navigate to="/employee/learning" replace />} />
           <Route path="/employee/learning" element={<EmployeeLayout title="내 교육" subtitle="배정된 교육을 확인하고 학습을 이어갈 수 있습니다."><LearningPage /></EmployeeLayout>} />
           <Route path="/employee/learning/:enrollmentId" element={<EmployeeLayout title="교육 상세" subtitle="학습 현황과 콘텐츠를 확인합니다."><LearningDetailPage /></EmployeeLayout>} />

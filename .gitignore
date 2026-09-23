@@ -11,6 +11,12 @@
 **/node_modules/
 **/dist/
 
+# Generated test reports and TypeScript cache
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
+
 # Expo / React Native
 **/.expo/
 **/.expo-shared/
@@ -22,7 +28,11 @@
 
 # Spring local config
 **/application-local.yml
+**/application-local.yaml
+**/application-local.properties
 **/application-secret.yml
+**/application-secret.yaml
+**/application-secret.properties
 
 # OS
 .DS_Store
@@ -30,3 +40,8 @@ Thumbs.db
 
 # Docs
 /docs
+*.[mM][dD]
+
+# Personal UI preview (keep automated tests tracked)
+/fe/tests/admin-preview.html
+/fe/tests/admin-preview.tsx

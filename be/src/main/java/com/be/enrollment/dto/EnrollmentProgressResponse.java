@@ -13,5 +13,5 @@ public record EnrollmentProgressResponse(Long enrollmentId, EnrollmentStatus sta
         LocalDate courseStartDate, LocalDate courseEndDate,
         Long instructorId, String instructorName,
         BigDecimal progressRate, BigDecimal passingProgressRate, boolean contentConditionSatisfied,
-        List<ContentProgressResponse> contents) {
+        List<ContentProgressResponse> contents, EnrollmentExamResponse exam) {
 }

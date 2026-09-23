@@ -94,7 +94,7 @@ class LearningWorkflowIntegrationTest {
     private final ExamService examService = new ExamService(courses, exams, questions, choices, validator, attempts);
     private final QuestionService questionService = new QuestionService(examService, questions, choices, attempts, answers, validator);
     private final EnrollmentCompletionService completion = new EnrollmentCompletionService(exams, attempts, contents, progresses);
-    private final ContentProgressService progressService = new ContentProgressService(enrollments, contents, progresses, completion, CLOCK);
+    private final ContentProgressService progressService = new ContentProgressService(enrollments, contents, progresses, completion, CLOCK, exams);
     private final ExamAttemptService attemptService = new ExamAttemptService(enrollments, courses, exams, attempts, answers, questions,
             choices, validator, new ExamGradingService(), completion, CLOCK);
 

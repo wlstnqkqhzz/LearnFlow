@@ -135,7 +135,7 @@ class ServiceValidationTest {
         var progresses = mock(com.be.enrollment.repository.ContentProgressRepository.class);
         var completion = mock(com.be.enrollment.service.EnrollmentCompletionService.class);
         var service = validated(new com.be.enrollment.service.ContentProgressService(
-                enrollments, contents, progresses, completion, Clock.systemUTC()));
+                enrollments, contents, progresses, completion, Clock.systemUTC(), mock(com.be.exam.repository.ExamRepository.class)));
         for (String rate : new String[] {"-1", "100.01", "33.333"}) {
             assertThatThrownBy(() -> service.update(1L, 1L, null,
                     new com.be.enrollment.dto.ContentProgressUpdateRequest(new java.math.BigDecimal(rate))))

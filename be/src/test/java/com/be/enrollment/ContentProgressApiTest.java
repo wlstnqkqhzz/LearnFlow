@@ -72,12 +72,28 @@ class ContentProgressApiTest {
         }).when(progresses).saveAndFlush(any());
     }
 
+    @Test void examSummaryOnlyExposesLearningMetadataAfterOwnershipCheck() throws Exception {
+        var exam = com.be.exam.entity.Exam.create(course(), "최종 평가", new java.math.BigDecimal("75.50"), 3);
+        com.be.assignment.AssignmentFixtures.id(exam, 20L);
+        when(exams.findByCourseId(1L)).thenReturn(Optional.of(exam));
+        mvc.perform(get(READ).with(as(2, Role.EMPLOYEE))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.exam.examId").value(20))
+                .andExpect(jsonPath("$.exam.title").value("최종 평가"))
+                .andExpect(jsonPath("$.exam.passingScore").value(75.50))
+                .andExpect(jsonPath("$.exam.maxAttempts").value(3))
+                .andExpect(jsonPath("$.exam.questions").doesNotExist())
+                .andExpect(jsonPath("$.exam.course").doesNotExist());
+        mvc.perform(get(READ).with(as(3, Role.EMPLOYEE))).andExpect(status().isForbidden());
+        verify(exams, times(1)).findByCourseId(1L);
+    }
+
     @Test void ownerReadsAndUpdatesWithConsistentDto() throws Exception {
         mvc.perform(get(READ).with(as(2, Role.EMPLOYEE))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.courseTitle").value("교육"))
                 .andExpect(jsonPath("$.courseType").value("MANDATORY"))
                 .andExpect(jsonPath("$.dueDate").value("2026-10-19"))
                 .andExpect(jsonPath("$.instructorId").isEmpty())
+                .andExpect(jsonPath("$.exam").isEmpty())
                 .andExpect(jsonPath("$.contents[0].progressRate").value(0))
                 .andExpect(jsonPath("$.contents[0].title").value("콘텐츠1"))
                 .andExpect(jsonPath("$.contents[0].contentType").value("VIDEO"))

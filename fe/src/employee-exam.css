@@ -1,0 +1,26 @@
+.employee-exam-page { width: 100%; max-width: 1000px; }
+.employee-exam-section { display: grid; gap: var(--space-4); padding: var(--space-5); min-width: 0; }
+.employee-exam-section > p { color: var(--text-secondary); line-height: 1.7; }
+.employee-exam-section h2 { font-size: 19px; }
+.exam-back { justify-self: start; }
+.employee-exam-history ul { padding: 0; list-style: none; }
+.employee-exam-history li { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); border-bottom: 1px solid var(--border); padding: var(--space-3) 0; }
+.employee-exam-history a { color: var(--primary-text); }
+.exam-question-nav { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.employee-exam-question { min-width: 0; padding: 0; border: 0; }
+.employee-exam-question legend { font-size: 18px; font-weight: 700; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
+.employee-exam-question > p { color: var(--text-muted); margin: var(--space-3) 0; }
+.employee-exam-choices { display: grid; gap: var(--space-3); }
+.employee-exam-choices label { display: flex; align-items: flex-start; gap: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--space-4); cursor: pointer; }
+.employee-exam-choices label:has(input:checked) { background: var(--primary-soft); border-color: var(--primary-text); }
+.employee-exam-choices input { flex: 0 0 auto; width: 18px; height: 18px; accent-color: var(--primary-text); margin-top: 2px; }
+.employee-exam-choices span { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; }
+.exam-navigation { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); }
+.employee-exam-result { justify-items: start; }
+.exam-result-score { font-size: 36px; color: var(--primary-text); }
+.employee-exam-section :focus-visible { outline: 2px solid var(--primary-text); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .employee-exam-section { padding: var(--space-4); }
+  .employee-exam-question legend { font-size: 16px; }
+  .employee-exam-history li { align-items: flex-start; }
+}

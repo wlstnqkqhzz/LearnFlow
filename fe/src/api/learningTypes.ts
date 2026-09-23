@@ -1,6 +1,7 @@
 import type { PageResponse } from './adminTypes.ts'
 import type { ContentType, CourseType } from './courseTypes.ts'
 import type { EnrollmentStatus } from './assignmentTypes.ts'
+import type { EmployeeExamSummary } from './employeeExamTypes.ts'
 
 export type MyEnrollment = {
   enrollmentId: number
@@ -36,6 +37,7 @@ export type LearningContentProgress = {
 }
 
 export type MyLearningDetail = {
+  exam: EmployeeExamSummary | null
   enrollmentId: number
   status: EnrollmentStatus
   dueDate: string

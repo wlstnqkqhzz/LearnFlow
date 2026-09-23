@@ -32,7 +32,7 @@ class ContentProgressServiceTest {
     final ContentProgressRepository progresses = mock(ContentProgressRepository.class);
     final ExamRepository exams = mock(ExamRepository.class);
     final ContentProgressService service = new ContentProgressService(enrollments, contents, progresses,
-            new EnrollmentCompletionService(exams, mock(com.be.exam.repository.ExamAttemptRepository.class), mock(com.be.course.repository.CourseContentRepository.class), mock(com.be.enrollment.repository.ContentProgressRepository.class)), AssignmentFixtures.CLOCK);
+            new EnrollmentCompletionService(exams, mock(com.be.exam.repository.ExamAttemptRepository.class), mock(com.be.course.repository.CourseContentRepository.class), mock(com.be.enrollment.repository.ContentProgressRepository.class)), AssignmentFixtures.CLOCK, exams);
     Course course;
     Enrollment enrollment;
     CourseContent content;
@@ -53,6 +53,19 @@ class ContentProgressServiceTest {
             stored.put(progress.getCourseContent().getId(), progress);
             return progress;
         }).when(progresses).saveAndFlush(any());
+    }
+
+    @Test void optionalExamSummaryIsReadOnlyAndContainsOnlyLearningFields() {
+        assertThat(service.get(10L, OWNER).exam()).isNull();
+        var exam = com.be.exam.entity.Exam.create(course, "최종 평가", new BigDecimal("75.50"), 3);
+        AssignmentFixtures.id(exam, 20L);
+        when(exams.findByCourseId(course.getId())).thenReturn(Optional.of(exam));
+        var summary = service.get(10L, OWNER).exam();
+        assertThat(summary.examId()).isEqualTo(20L);
+        assertThat(summary.title()).isEqualTo("최종 평가");
+        assertThat(summary.passingScore()).isEqualByComparingTo("75.50");
+        assertThat(summary.maxAttempts()).isEqualTo(3);
+        verify(exams, never()).save(any());
     }
 
     @Test void firstPositiveProgressStartsLearningAndUpdatesSameRow() {

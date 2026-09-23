@@ -6,6 +6,7 @@ import { ErrorState, LoadingState } from '../../components/admin/AdminUI.tsx'
 import { ProgressBar } from '../../components/common/Progress.tsx'
 import { useRemote } from '../../hooks/useRemote.ts'
 import { LearningStatusBadge } from './LearningPage.tsx'
+import { EmployeeExamSection } from './EmployeeExamSection.tsx'
 import { dueLabel, isTerminal, learningContentTypes, learningCourseTypes, learningPeriod, utcDateInSeoul } from './learningUtils.ts'
 
 export function LearningContentList({ detail }: { detail: MyLearningDetail }) {
@@ -32,5 +33,5 @@ function LearningDetail({ enrollmentId }: { enrollmentId: number }) {
   if (query.loading) return <div className="learning-page"><LoadingState /></div>
   if (query.error) return <div className="learning-page"><ErrorState message={query.error} retry={query.reload} /></div>
   const detail = query.data!
-  return <div className="learning-page"><div className="learning-page-actions"><Link className="admin-button" to="/employee/learning">내 교육으로</Link></div><LearningSummary detail={detail} /><section className="surface learning-progress-summary"><div><h2>나의 학습 현황</h2><p>필수 콘텐츠 평균 진도 기준</p></div><strong>{detail.progressRate}%</strong><ProgressBar value={Number(detail.progressRate)} label="수료 진도" /><span>수료 기준 {detail.passingProgressRate}%{detail.contentConditionSatisfied ? ' · 콘텐츠 조건 충족' : ''}</span></section><section className="surface learning-contents"><div className="section-heading"><div><h2>콘텐츠</h2><p className="admin-hint">필수 콘텐츠만 수료 진도에 반영됩니다.</p></div></div>{detail.contents.length ? <LearningContentList detail={detail} /> : <p className="admin-state">등록된 학습 콘텐츠가 없습니다.</p>}</section></div>
+  return <div className="learning-page"><div className="learning-page-actions"><Link className="admin-button" to="/employee/learning">내 교육으로</Link></div><LearningSummary detail={detail} /><section className="surface learning-progress-summary"><div><h2>나의 학습 현황</h2><p>필수 콘텐츠 평균 진도 기준</p></div><strong>{detail.progressRate}%</strong><ProgressBar value={Number(detail.progressRate)} label="수료 진도" /><span>수료 기준 {detail.passingProgressRate}%{detail.contentConditionSatisfied ? ' · 콘텐츠 조건 충족' : ''}</span></section><section className="surface learning-contents"><div className="section-heading"><div><h2>콘텐츠</h2><p className="admin-hint">필수 콘텐츠만 수료 진도에 반영됩니다.</p></div></div>{detail.contents.length ? <LearningContentList detail={detail} /> : <p className="admin-state">등록된 학습 콘텐츠가 없습니다.</p>}</section><EmployeeExamSection detail={detail} onRefresh={query.reload} /></div>
 }

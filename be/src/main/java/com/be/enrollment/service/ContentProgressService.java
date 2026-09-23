@@ -29,6 +29,7 @@ public class ContentProgressService {
     private final ContentProgressRepository progresses;
     private final EnrollmentCompletionService completion;
     private final Clock clock;
+    private final com.be.exam.repository.ExamRepository exams;
 
     // 관리자는 조회만 예외 허용; 직원은 항상 본인 수강인지 확인
     public EnrollmentProgressResponse get(Long enrollmentId, MemberPrincipal principal) {
@@ -88,6 +89,7 @@ public class ContentProgressService {
                 course.getId(), course.getTitle(), course.getDescription(), course.getCourseType(),
                 course.getStartDate(), course.getEndDate(),
                 instructor == null ? null : instructor.getId(), instructor == null ? null : instructor.getName(),
-                summary.progressRate(), course.getPassingProgressRate(), summary.contentConditionSatisfied(), items);
+                summary.progressRate(), course.getPassingProgressRate(), summary.contentConditionSatisfied(), items,
+                exams.findByCourseId(course.getId()).map(EnrollmentExamResponse::from).orElse(null));
     }
 }

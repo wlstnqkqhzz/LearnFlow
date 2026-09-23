@@ -180,7 +180,7 @@ class ExamAttemptServiceTest {
         service.saveAnswer(id, 1L, owner, new AnswerSaveRequest(List.of(100L))); service.submit(id, owner);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
         error(() -> service.start(10L, owner), ErrorCode.EXAM_ALREADY_PASSED);
-        var progressService = new ContentProgressService(enrollments, contents, progresses, completion, AssignmentFixtures.CLOCK);
+        var progressService = new ContentProgressService(enrollments, contents, progresses, completion, AssignmentFixtures.CLOCK, exams);
         doAnswer(call -> { ContentProgress p = call.getArgument(0); doReturn(List.of(p)).when(progresses).findByEnrollmentId(10L); return p; })
                 .when(progresses).saveAndFlush(any());
         progressService.update(10L, content.getId(), owner, new com.be.enrollment.dto.ContentProgressUpdateRequest(new BigDecimal("100")));
