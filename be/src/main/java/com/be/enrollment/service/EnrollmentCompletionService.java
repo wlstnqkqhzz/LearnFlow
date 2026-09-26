@@ -24,6 +24,7 @@ public class EnrollmentCompletionService {
     private final ExamAttemptRepository attempts;
     private final CourseContentRepository contents;
     private final ContentProgressRepository progresses;
+    private final com.be.notification.service.NotificationService notifications;
 
     // 시험 제출에서도 누락 진도를 0으로 포함하는 동일 요약/판정을 재사용
     @Transactional(propagation = Propagation.MANDATORY)
@@ -54,6 +55,7 @@ public class EnrollmentCompletionService {
                 && (!exams.existsByCourseId(enrollment.getCourse().getId())
                     || attempts.existsByEnrollmentIdAndSubmittedAtIsNotNullAndPassedTrue(enrollment.getId()))) {
             enrollment.completeLearning(now);
+            notifications.notify(enrollment, com.be.notification.enums.NotificationType.COURSE_COMPLETED);
         }
     }
 

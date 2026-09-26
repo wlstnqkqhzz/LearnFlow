@@ -31,6 +31,7 @@ public class AutoAssignmentService {
     private final EnrollmentRepository enrollments;
     private final Clock clock;
     private final EntityManager entityManager;
+    private final com.be.notification.service.NotificationService notifications;
 
     // Course OPEN 직후 활성 규칙을 ID 순으로 평가
     public void assignCourse(Long courseId) {
@@ -98,8 +99,9 @@ public class AutoAssignmentService {
     private void assignIfMissing(Member member, Course course, AssignmentRule rule) {
         if (enrollments.findExistingForAssignment(member.getId(), course.getId()).isPresent()) return;
         try {
-            enrollments.saveAndFlush(Enrollment.automatic(member, rule,
+            var enrollment = enrollments.saveAndFlush(Enrollment.automatic(member, rule,
                     LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC)));
+            notifications.notify(enrollment, com.be.notification.enums.NotificationType.ENROLLMENT_ASSIGNED);
         } catch (DataIntegrityViolationException exception) {
             // UNIQUE도 무시하지 않고 전체 트랜잭션 실패로 전파
             throw UniqueConstraintErrors.translate(exception);

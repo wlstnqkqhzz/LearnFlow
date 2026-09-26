@@ -47,6 +47,7 @@ class AssignmentApiTest {
     @Autowired MockMvc mvc;
     @MockitoBean AssignmentRuleService rules;
     @MockitoBean EnrollmentRepository enrollments;
+    @MockitoBean com.be.notification.service.NotificationService notifications;
     @MockitoBean CourseRepository courses;
     @MockitoBean MemberRepository members;
     @MockitoBean JwtTokenProvider tokens;

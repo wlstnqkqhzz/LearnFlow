@@ -44,6 +44,7 @@ class ContentProgressApiTest {
     static final String UPDATE = "/api/enrollments/10/contents/1/progress";
     @Autowired MockMvc mvc;
     @MockitoBean EnrollmentRepository enrollments;
+    @MockitoBean com.be.notification.service.NotificationService notifications;
     @MockitoBean CourseContentRepository contents;
     @MockitoBean ContentProgressRepository progresses;
     @MockitoBean ExamRepository exams;

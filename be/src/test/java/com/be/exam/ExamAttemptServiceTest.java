@@ -40,9 +40,9 @@ class ExamAttemptServiceTest {
     final QuestionChoiceRepository choices = mock(QuestionChoiceRepository.class);
     final CourseContentRepository contents = mock(CourseContentRepository.class);
     final ContentProgressRepository progresses = mock(ContentProgressRepository.class);
-    final EnrollmentCompletionService completion = new EnrollmentCompletionService(exams, attempts, contents, progresses);
+    final EnrollmentCompletionService completion = new EnrollmentCompletionService(exams, attempts, contents, progresses, mock(com.be.notification.service.NotificationService.class));
     final ExamAttemptService service = new ExamAttemptService(enrollments, courses, exams, attempts, answers, questions,
-            choices, new ExamConfigurationValidator(), new ExamGradingService(), completion, AssignmentFixtures.CLOCK);
+            choices, new ExamConfigurationValidator(), new ExamGradingService(), completion, AssignmentFixtures.CLOCK, mock(com.be.notification.service.NotificationService.class));
     final MemberPrincipal owner = new MemberPrincipal(2L, "owner@example.com", Set.of(Role.EMPLOYEE));
     final MemberPrincipal other = new MemberPrincipal(3L, "other@example.com", Set.of(Role.EMPLOYEE));
     final MemberPrincipal admin = new MemberPrincipal(3L, "admin@example.com", Set.of(Role.ADMIN, Role.EMPLOYEE));
@@ -239,7 +239,7 @@ class ExamAttemptServiceTest {
     @Test void completionFailureIsPropagatedSoOuterTransactionCannotCommit() {
         var failing = mock(EnrollmentCompletionService.class);
         var tested = new ExamAttemptService(enrollments, courses, exams, attempts, answers, questions, choices,
-                new ExamConfigurationValidator(), new ExamGradingService(), failing, AssignmentFixtures.CLOCK);
+                new ExamConfigurationValidator(), new ExamGradingService(), failing, AssignmentFixtures.CLOCK, mock(com.be.notification.service.NotificationService.class));
         long id = service.start(10L, owner).attempt().attemptId();
         service.saveAnswer(id, 1L, owner, new AnswerSaveRequest(List.of(100L)));
         doThrow(new IllegalStateException("completion failed")).when(failing).evaluate(eq(enrollment), any(LocalDateTime.class));

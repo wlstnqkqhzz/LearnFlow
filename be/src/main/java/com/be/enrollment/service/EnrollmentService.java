@@ -28,6 +28,7 @@ public class EnrollmentService {
     private final CourseRepository courses;
     private final MemberRepository members;
     private final Clock clock;
+    private final com.be.notification.service.NotificationService notifications;
 
     @Transactional
     public EnrollmentResponse assignManually(@NotNull @Positive Long courseId,
@@ -52,6 +53,7 @@ public class EnrollmentService {
         } catch (DataIntegrityViolationException exception) {
             throw UniqueConstraintErrors.translate(exception);
         }
+        notifications.notify(enrollment, com.be.notification.enums.NotificationType.ENROLLMENT_ASSIGNED);
         return EnrollmentResponse.from(enrollment);
     }
 

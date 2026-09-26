@@ -32,6 +32,7 @@ class EnrollmentExpirationServiceTest {
     private static final List<EnrollmentStatus> TARGETS = List.of(EnrollmentStatus.ASSIGNED, EnrollmentStatus.IN_PROGRESS);
     private final EnrollmentRepository enrollments = mock(EnrollmentRepository.class);
     private final PlatformTransactionManager transactions = mock(PlatformTransactionManager.class);
+    private final com.be.notification.service.NotificationService notifications = mock(com.be.notification.service.NotificationService.class);
     private AnnotationConfigApplicationContext context;
     private EnrollmentExpirationProcessor processor;
     private EnrollmentExpirationService service;
@@ -47,7 +48,7 @@ class EnrollmentExpirationServiceTest {
         context.register(TransactionConfig.class);
         context.registerBean(EnrollmentRepository.class, () -> enrollments);
         context.registerBean(PlatformTransactionManager.class, () -> transactions);
-        context.registerBean(EnrollmentExpirationProcessor.class);
+        context.registerBean(EnrollmentExpirationProcessor.class, () -> new EnrollmentExpirationProcessor(enrollments, notifications));
         context.refresh();
         processor = context.getBean(EnrollmentExpirationProcessor.class);
         service = service(CLOCK);
@@ -206,6 +207,17 @@ class EnrollmentExpirationServiceTest {
 
     private EnrollmentExpirationService service(Clock clock) {
         return new EnrollmentExpirationService(enrollments, processor, clock);
+    }
+
+    @Test
+    void notificationFailureRollsBackExpirationTransaction() {
+        twoCandidates();
+        var failure = new IllegalStateException("notification persistence failed");
+        doThrow(failure).when(notifications).notify(any(), any());
+        assertThatThrownBy(service::expireOverdueEnrollments).isSameAs(failure);
+        verify(transactions).rollback(any());
+        verify(transactions, never()).commit(any());
+        verify(enrollments, never()).findById(2L);
     }
 
     private void candidate(Enrollment enrollment, LocalDate today) {

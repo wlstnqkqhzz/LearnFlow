@@ -40,7 +40,7 @@ class BeApplicationTests {
     @Test
     void contextLoads() throws Exception {
         assertThat(entityManagerFactory.isOpen()).isTrue();
-        assertThat(entityManagerFactory.getMetamodel().getEntities()).hasSize(13);
+        assertThat(entityManagerFactory.getMetamodel().getEntities()).hasSize(14);
         // 래퍼/health 구성 조회는 허용하되 실제 저장소 연결을 요청하지 않았는지 확인
         verify(dataSource, never()).getConnection();
         verify(dataSource, never()).getConnection(anyString(), anyString());

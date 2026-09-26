@@ -39,6 +39,7 @@ public class ExamAttemptService {
     private final ExamGradingService grading;
     private final EnrollmentCompletionService completion;
     private final Clock clock;
+    private final com.be.notification.service.NotificationService notifications;
 
     // Course → Enrollment 순서로 잠가 최초 응시와 관리자 구성 변경의 경쟁을 방지
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -122,6 +123,7 @@ public class ExamAttemptService {
         if (success) completion.evaluate(enrollment, now);
         else if (!passed(history) && history.stream().filter(a -> a.getSubmittedAt() != null).count() >= exam.getMaxAttempts()) {
             enrollment.failLearning();
+            notifications.notify(enrollment, com.be.notification.enums.NotificationType.COURSE_FAILED);
         }
         enrollments.flush();
         return AttemptResponse.from(attempt, history.size());

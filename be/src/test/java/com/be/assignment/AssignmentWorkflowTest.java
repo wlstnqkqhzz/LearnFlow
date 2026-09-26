@@ -30,7 +30,7 @@ class AssignmentWorkflowTest {
         var rules = mock(AssignmentRuleRepository.class);
         var members = mock(MemberRepository.class);
         var enrollments = mock(EnrollmentRepository.class);
-        var auto = new AutoAssignmentService(courses, rules, members, enrollments, CLOCK, mock(EntityManager.class));
+        var auto = new AutoAssignmentService(courses, rules, members, enrollments, CLOCK, mock(EntityManager.class), mock(com.be.notification.service.NotificationService.class));
         var ruleService = new AssignmentRuleService(rules, courses, mock(DepartmentRepository.class),
                 mock(JobPositionRepository.class), auto);
         var courseService = new CourseService(courses, members, auto);

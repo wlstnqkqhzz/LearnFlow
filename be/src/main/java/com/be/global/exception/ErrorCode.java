@@ -35,6 +35,7 @@ public enum ErrorCode {
     ENROLLMENT_PROGRESS_ACCESS_DENIED("해당 수강의 학습 진도에 접근할 수 없습니다."),
     ENROLLMENT_PROGRESS_NOT_EDITABLE("종료된 수강의 학습 진도는 변경할 수 없습니다."),
     INVALID_PROGRESS_RATE("진도율은 소수점 둘째 자리까지의 0~100 값이어야 합니다."),
+    NOTIFICATION_NOT_FOUND("알림을 찾을 수 없습니다."),
     EXAM_NOT_FOUND("해당 과정의 시험을 찾을 수 없습니다."),
     DUPLICATE_EXAM("과정에는 시험을 하나만 생성할 수 있습니다."),
     QUESTION_NOT_FOUND("해당 시험의 문항을 찾을 수 없습니다."),

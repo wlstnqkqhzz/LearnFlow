@@ -68,6 +68,7 @@ class LearningWorkflowIntegrationTest {
     private final Map<Long, QuestionChoice> choiceRows = new LinkedHashMap<>();
     private final Map<Long, ExamAttempt> attemptRows = new LinkedHashMap<>();
     private final Map<Long, ExamAnswer> answerRows = new LinkedHashMap<>();
+    private final List<com.be.notification.entity.Notification> notificationRows = new ArrayList<>();
     private final DepartmentRepository departments = mock(DepartmentRepository.class);
     private final JobPositionRepository positions = mock(JobPositionRepository.class);
     private final MemberRepository members = mock(MemberRepository.class);
@@ -81,7 +82,9 @@ class LearningWorkflowIntegrationTest {
     private final QuestionChoiceRepository choices = mock(QuestionChoiceRepository.class);
     private final ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
     private final ExamAnswerRepository answers = mock(ExamAnswerRepository.class);
-    private final AutoAssignmentService auto = new AutoAssignmentService(courses, rules, members, enrollments, CLOCK, mock(EntityManager.class));
+    private final com.be.notification.repository.NotificationRepository notificationRepository = mock(com.be.notification.repository.NotificationRepository.class);
+    private final com.be.notification.service.NotificationService notifications = new com.be.notification.service.NotificationService(notificationRepository, CLOCK);
+    private final AutoAssignmentService auto = new AutoAssignmentService(courses, rules, members, enrollments, CLOCK, mock(EntityManager.class), notifications);
     private final DepartmentService departmentService = new DepartmentService(departments);
     private final JobPositionService positionService = new JobPositionService(positions);
     private final MemberSupportConfig support = new MemberSupportConfig();
@@ -93,13 +96,18 @@ class LearningWorkflowIntegrationTest {
     private final ExamConfigurationValidator validator = new ExamConfigurationValidator();
     private final ExamService examService = new ExamService(courses, exams, questions, choices, validator, attempts);
     private final QuestionService questionService = new QuestionService(examService, questions, choices, attempts, answers, validator);
-    private final EnrollmentCompletionService completion = new EnrollmentCompletionService(exams, attempts, contents, progresses);
+    private final EnrollmentCompletionService completion = new EnrollmentCompletionService(exams, attempts, contents, progresses, notifications);
     private final ContentProgressService progressService = new ContentProgressService(enrollments, contents, progresses, completion, CLOCK, exams);
     private final ExamAttemptService attemptService = new ExamAttemptService(enrollments, courses, exams, attempts, answers, questions,
-            choices, validator, new ExamGradingService(), completion, CLOCK);
+            choices, validator, new ExamGradingService(), completion, CLOCK, notifications);
 
     @BeforeEach
     void repositories() {
+        when(notificationRepository.save(any())).thenAnswer(c -> {
+            com.be.notification.entity.Notification notification = c.getArgument(0);
+            notificationRows.add(notification);
+            return notification;
+        });
         when(departments.saveAndFlush(any())).thenAnswer(c -> save(departmentRows, c.getArgument(0)));
         when(departments.findAllForUpdate()).thenAnswer(c -> List.copyOf(departmentRows.values()));
         when(departments.findById(anyLong())).thenAnswer(c -> Optional.ofNullable(departmentRows.get(c.getArgument(0))));
@@ -204,6 +212,67 @@ class LearningWorkflowIntegrationTest {
     }
 
     @Test
+    void automaticAssignmentAndRepeatedCompletionCreateOnlyOneNotificationPerEvent() {
+        var scenario = prepare(false, true, false);
+        auto.assignCourse(scenario.courseId());
+        auto.assignMember(memberRows.get(scenario.principal().memberId()));
+        assertThat(notificationRows).hasSize(1);
+        assertThat(notificationRows.getFirst().getType()).isEqualTo(com.be.notification.enums.NotificationType.ENROLLMENT_ASSIGNED);
+        learn(scenario, "100");
+        completion.evaluate(scenario.enrollment(), LocalDateTime.now(CLOCK));
+        assertThat(notificationRows).hasSize(2);
+        assertThat(notificationRows.getLast().getType()).isEqualTo(com.be.notification.enums.NotificationType.COURSE_COMPLETED);
+        assertThat(notificationRows).allSatisfy(n -> {
+            assertThat(n.getMember().getId()).isEqualTo(scenario.principal().memberId());
+            assertThat(n.getEnrollment()).isSameAs(scenario.enrollment());
+            assertThat(n.getMessage()).contains("통합 교육");
+            assertThat(n.getReadAt()).isNull();
+        });
+    }
+
+    @Test
+    void manualAssignmentNotifiesOnceAndDuplicateRequestDoesNotNotify() {
+        var scenario = prepare(false, false, false);
+        long courseId = courseService.create(new CourseCreateRequest("수동 교육", null, CourseType.OPTIONAL,
+                TODAY, TODAY.plusDays(10), BigDecimal.TEN, null)).id();
+        courseService.changeStatus(courseId, new CourseStatusRequest(CourseStatus.OPEN));
+        var manual = new EnrollmentService(enrollments, courses, members, CLOCK, notifications);
+        var request = new ManualEnrollmentRequest(scenario.principal().memberId());
+        var assigned = manual.assignManually(courseId, request);
+        assertThat(notificationRows).hasSize(2);
+        assertThat(notificationRows.getLast().getEnrollment().getId()).isEqualTo(assigned.enrollmentId());
+        error(() -> manual.assignManually(courseId, request), ErrorCode.DUPLICATE_ENROLLMENT);
+        assertThat(notificationRows).hasSize(2);
+    }
+
+    @Test
+    void onlyFinalFailedAttemptNotifiesAndRepeatedSubmissionDoesNotNotify() {
+        var scenario = prepare(true, true, false);
+        long last = 0;
+        for (int number = 1; number <= 3; number++) {
+            last = attemptService.start(scenario.enrollment().getId(), scenario.principal()).attempt().attemptId();
+            attemptService.submit(last, scenario.principal());
+            assertThat(notificationRows).hasSize(number < 3 ? 1 : 2);
+        }
+        assertThat(notificationRows.getLast().getType()).isEqualTo(com.be.notification.enums.NotificationType.COURSE_FAILED);
+        long submitted = last;
+        assertThatThrownBy(() -> attemptService.submit(submitted, scenario.principal())).isInstanceOf(BusinessException.class);
+        assertThat(notificationRows).hasSize(2);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void expirationNotifiesOnceForAssignedAndInProgress(boolean started) {
+        var scenario = prepare(true, true, false);
+        if (started) learn(scenario, "20");
+        var processor = new EnrollmentExpirationProcessor(enrollments, notifications);
+        assertThat(processor.expire(scenario.enrollment().getId(), TODAY.plusDays(40))).isTrue();
+        assertThat(processor.expire(scenario.enrollment().getId(), TODAY.plusDays(40))).isFalse();
+        assertThat(notificationRows).hasSize(2);
+        assertThat(notificationRows.getLast().getType()).isEqualTo(com.be.notification.enums.NotificationType.ENROLLMENT_EXPIRED);
+    }
+
+    @Test
     void noExamAndNoInstructorStillOpensAssignsAndCompletes() {
         var scenario = prepare(false, true, false);
         assertThat(courseRows.get(scenario.courseId()).getInstructor()).isNull();
@@ -246,7 +315,7 @@ class LearningWorkflowIntegrationTest {
         var startedAt = scenario.enrollment().getStartedAt();
         var source = scenario.enrollment().getAssignmentSource();
         var rule = scenario.enrollment().getAssignmentRule();
-        var expiration = new EnrollmentExpirationService(enrollments, new EnrollmentExpirationProcessor(enrollments),
+        var expiration = new EnrollmentExpirationService(enrollments, new EnrollmentExpirationProcessor(enrollments, notifications),
                 Clock.offset(CLOCK, Duration.ofDays(40)));
         assertThat(expiration.expireOverdueEnrollments().expiredCount()).isEqualTo(1);
         assertThat(expiration.expireOverdueEnrollments().expiredCount()).isZero();

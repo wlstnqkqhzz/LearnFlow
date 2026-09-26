@@ -34,7 +34,7 @@ class EnrollmentServiceTest {
     EnrollmentService service;
 
     @BeforeEach
-    void setUp() { service = new EnrollmentService(enrollments, courses, members, CLOCK); }
+    void setUp() { service = new EnrollmentService(enrollments, courses, members, CLOCK, mock(com.be.notification.service.NotificationService.class)); }
 
     @ParameterizedTest
     @EnumSource(value = MemberStatus.class, names = {"ACTIVE", "ON_LEAVE"})

@@ -15,7 +15,8 @@
     "test:exam": "node --test tests/exam.test.mjs",
     "test:learning": "node --test tests/learning.test.mjs",
     "test:employee-exam": "node --test tests/employee-exam.test.mjs",
-    "test": "npm run test:auth && npm run test:admin && npm run test:course && npm run test:assignment && npm run test:exam && npm run test:learning && npm run test:employee-exam"
+    "test:notification": "node --test tests/notification.test.mjs",
+    "test": "npm run test:auth && npm run test:admin && npm run test:course && npm run test:assignment && npm run test:exam && npm run test:learning && npm run test:employee-exam && npm run test:notification"
   },
   "dependencies": {
     "axios": "^1.20.0",
