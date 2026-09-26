@@ -48,7 +48,7 @@ function CourseDetail({ id }: { id: number }) {
     {query.loading ? <LoadingState /> : query.error ? <ErrorState message={query.error} retry={query.reload} /> : course && <>
       <section className="course-summary surface"><div><div className="row-actions"><CourseTypeBadge type={course.courseType} /><CourseStatusBadge status={course.status} /></div><h2>{course.title}</h2><p>{course.instructorName ?? '강사 미지정'} · {coursePeriod(course)}</p></div>{next && <button type="button" className={`admin-button ${next === 'OPEN' ? 'primary-button' : 'danger-button'}`} disabled={action.pending} onClick={requestStatus}>{next === 'OPEN' ? '과정 오픈' : '과정 종료'}</button>}</section>
       <Feedback error={statusNotice || (!confirmStatus ? action.error : '')} success={action.success} />
-      <section className="surface detail-section course-editor" aria-labelledby="course-info-heading"><div className="section-heading"><div><h2 id="course-info-heading">기본 정보</h2><p className="admin-hint">상태와 관계없이 백엔드에서 허용하는 일반 정보를 수정할 수 있습니다.</p></div></div><CourseForm key={course.updatedAt} course={course} pending={action.pending} actionError="" submitLabel="기본 정보 저장" onSubmit={async request => {
+      <section className="surface detail-section course-editor" aria-labelledby="course-info-heading"><div className="section-heading"><div><h2 id="course-info-heading">기본 정보</h2><p className="admin-hint">교육과정의 이름, 설명, 기간과 수료 기준을 관리합니다.</p></div></div><CourseForm key={course.updatedAt} course={course} pending={action.pending} actionError="" submitLabel="기본 정보 저장" onSubmit={async request => {
         setStatusNotice('')
         await action.run(async () => { await courseApi.update(id, request); query.reload() }, '교육과정 정보를 수정했습니다.')
       }} /></section>

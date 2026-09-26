@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { employeeExamApi, loadEmployeeAttempt } from '../../api/employeeExamApi.ts'
 import { employeeLearningApi } from '../../api/employeeLearningApi.ts'
@@ -55,6 +55,12 @@ function AttemptEditor({ detail, attempt, paper, onRefresh }: { detail: MyLearni
   const navigate = useNavigate()
   const answered = questions.filter(q => snapshot.answers[q.questionId]?.length).length
   const disabled = snapshot.submitting || snapshot.submitted || snapshot.conflict || recovering
+  useEffect(() => {
+    if (!snapshot.pending && !snapshot.failed.length && !snapshot.submitting) return
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [snapshot.pending, snapshot.failed.length, snapshot.submitting])
   async function submit() {
     if (busy.current) return
     busy.current = true; setError('')
@@ -62,7 +68,7 @@ function AttemptEditor({ detail, attempt, paper, onRefresh }: { detail: MyLearni
       await session.submit()
       navigate(`/employee/learning/${detail.enrollmentId}/exam/${attempt.attemptId}/result`, { replace: true })
     } catch (cause) {
-      setError(snapshot.failed.length ? '저장 실패한 답안을 다시 저장한 뒤 제출해 주세요.' : examErrorMessage(cause))
+      setError(session.getSnapshot().failed.length ? '저장 실패한 답안을 다시 저장한 뒤 제출해 주세요.' : examErrorMessage(cause))
       // 제출 성공 응답 유실 또는 다른 탭 제출도 실제 이력과 수강 상태로 복구한다.
       setRecovering(true)
       try {

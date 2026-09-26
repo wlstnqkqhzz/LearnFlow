@@ -37,6 +37,10 @@
 .admin-modal::backdrop { background: rgb(18 48 82 / 28%); }
 .modal-heading { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5); }
 .modal-heading h2 { font-size: 17px; }
+.modal-heading h2 { min-width: 0; }
+.modal-heading > button { flex-shrink: 0; }
+.management-page, .management-page > *, .learning-page > * { min-width: 0; }
+.course-summary > div, .member-summary > div, .enrollment-heading > div { min-width: 0; }
 .admin-form { display: grid; gap: var(--space-4); }
 .admin-form fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: var(--space-4); min-width: 0; }
 .admin-form .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

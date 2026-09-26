@@ -27,7 +27,6 @@
 .message-card p { color: var(--text-secondary); }
 .message-code { font-size: 28px; color: var(--primary-text); font-weight: 700; }
 .auth-actions { display: flex; gap: var(--space-3); justify-content: center; margin-top: var(--space-5); flex-wrap: wrap; }
-.placeholder-email { margin-top: var(--space-3); overflow-wrap: anywhere; }
 .compact-logout { display: none; }
 @media (max-width: 850px) { .compact-logout { display: inline-flex; } }
 @media (max-width: 900px) {
@@ -38,5 +37,4 @@
 @media (max-width: 420px) {
   .auth-screen { padding: var(--space-4); }
   .login-card, .message-card { padding: var(--space-5); }
-  .header-tools .notification-button { display: none; }
 }

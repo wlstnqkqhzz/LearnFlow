@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { adminErrorCode, adminErrorMessage } from '../../api/adminError.ts'
 import { questionApi } from '../../api/examApi.ts'
 import type { AdminQuestion, QuestionType } from '../../api/examTypes.ts'
@@ -12,7 +12,7 @@ const defaults = (type: QuestionType): ChoiceDraft[] => type === 'TRUE_FALSE'
   ? [{ text: 'TRUE', correct: true, sortOrder: 1 }, { text: 'FALSE', correct: false, sortOrder: 2 }]
   : [{ text: '', correct: true, sortOrder: 1 }, { text: '', correct: false, sortOrder: 2 }]
 
-export function QuestionModal({ courseId, question, nextOrder, onClose, onSaved, onLocked }: {
+export function QuestionModal({ courseId, question: initialQuestion, nextOrder, onClose, onSaved, onLocked }: {
   courseId: number
   question?: AdminQuestion
   nextOrder: number
@@ -20,9 +20,13 @@ export function QuestionModal({ courseId, question, nextOrder, onClose, onSaved,
   onSaved: () => void
   onLocked: () => void
 }) {
+  const [question, setQuestion] = useState(initialQuestion)
+  const [revision, setRevision] = useState(0)
+  const [needsReload, setNeedsReload] = useState(false)
   const [type, setType] = useState<QuestionType>(question?.questionType ?? 'SINGLE_CHOICE')
   const [choices, setChoices] = useState<ChoiceDraft[]>(question?.choices.map(choice => ({ id: choice.choiceId, text: choice.choiceText, correct: choice.correct, sortOrder: choice.sortOrder })) ?? defaults('SINGLE_CHOICE'))
   const [pending, setPending] = useState(false)
+  const busy = useRef(false)
   const [error, setError] = useState('')
 
   function changeType(next: QuestionType) {
@@ -45,6 +49,25 @@ export function QuestionModal({ courseId, question, nextOrder, onClose, onSaved,
   }
   function removeChoice(index: number) { setChoices(current => current.filter((_, choiceIndex) => choiceIndex !== index).map((choice, choiceIndex) => ({ ...choice, sortOrder: choiceIndex + 1 }))) }
   function addChoice() { setChoices(current => [...current, { text: '', correct: false, sortOrder: current.length + 1 }]) }
+
+  // 여러 선택지 요청 중 일부만 성공했으면 서버 ID와 순서를 복구한 뒤 다시 편집한다.
+  async function reloadQuestion() {
+    if (!question) return
+    const current = (await questionApi.list(courseId)).find(item => item.questionId === question.questionId)
+    if (!current) throw new Error('Question no longer exists')
+    setQuestion(current)
+    setType(current.questionType)
+    setChoices(current.choices.map(choice => ({ id: choice.choiceId, text: choice.choiceText, correct: choice.correct, sortOrder: choice.sortOrder })))
+    setRevision(value => value + 1)
+    setNeedsReload(false)
+  }
+  async function retryReload() {
+    if (busy.current) return
+    busy.current = true; setPending(true)
+    try { await reloadQuestion(); setError('최신 문항을 불러왔습니다. 내용을 확인한 뒤 다시 수정해 주세요.') }
+    catch { setError('최신 문항을 불러오지 못했습니다. 연결을 확인한 뒤 다시 조회해 주세요.') }
+    finally { busy.current = false; setPending(false) }
+  }
 
   async function updateExisting(questionText: string, score: number) {
     if (!question) return
@@ -78,26 +101,35 @@ export function QuestionModal({ courseId, question, nextOrder, onClose, onSaved,
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (busy.current || needsReload) return
     const form = new FormData(event.currentTarget)
     const questionText = String(form.get('questionText') ?? '').trim()
     const score = Number(form.get('score'))
     const validation = validateAnswers(type, choices)
     if (validation) { setError(validation); return }
-    setPending(true); setError('')
+    busy.current = true; setPending(true); setError('')
     try {
       if (question) await updateExisting(questionText, score)
       else await questionApi.create(courseId, { questionText, questionType: type, score, sortOrder: nextOrder, choices: choices.map((choice, index) => ({ choiceText: choice.text.trim(), correct: choice.correct, sortOrder: index + 1 })) })
       onSaved()
     } catch (cause) {
-      if (adminErrorCode(cause) === 'EXAM_CONFIGURATION_LOCKED') onLocked()
-      setError(cause instanceof Error && !('response' in cause) ? cause.message : adminErrorMessage(cause))
-    } finally { setPending(false) }
+      if (adminErrorCode(cause) === 'EXAM_CONFIGURATION_LOCKED') { onLocked(); onClose(); return }
+      setError(adminErrorMessage(cause))
+      if (question) {
+        setNeedsReload(true)
+        try {
+          await reloadQuestion()
+          setError(`${adminErrorMessage(cause)} 일부 변경이 저장되었을 수 있어 최신 문항을 불러왔습니다. 내용을 확인해 주세요.`)
+        } catch { setError('저장 상태를 확인하지 못했습니다. 중복 저장을 방지하려면 최신 문항을 다시 조회해 주세요.') }
+      }
+    } finally { busy.current = false; setPending(false) }
   }
 
   return <Modal title={question ? '문항 수정' : '문항 추가'} onClose={onClose} busy={pending}>
     <form className="admin-form question-form" onSubmit={event => void submit(event)}>
       <Feedback error={error} />
-      <fieldset disabled={pending}>
+      {needsReload && <button type="button" className="admin-button" disabled={pending} onClick={() => void retryReload()}>최신 문항 다시 조회</button>}
+      <fieldset key={revision} disabled={pending || needsReload}>
         <label className="admin-field">문항 내용<textarea name="questionText" required rows={3} defaultValue={question?.questionText ?? ''} /></label>
         <div className="form-grid">
           <label className="admin-field">문항 유형<select value={type} onChange={event => changeType(event.target.value as QuestionType)}>{Object.entries(questionTypes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>{question && <small>O / X로 변경하면 선택지가 TRUE / FALSE 두 개로 정리됩니다.</small>}</label>
@@ -111,7 +143,7 @@ export function QuestionModal({ courseId, question, nextOrder, onClose, onSaved,
           </div>)}
         </div>
       </fieldset>
-      <div className="admin-actions"><button type="button" className="admin-button" disabled={pending} onClick={onClose}>취소</button><SubmitButton pending={pending} label={question ? '문항 저장' : '문항 추가'} /></div>
+      <div className="admin-actions"><button type="button" className="admin-button" disabled={pending} onClick={onClose}>취소</button>{!needsReload && <SubmitButton pending={pending} label={question ? '문항 저장' : '문항 추가'} />}</div>
     </form>
   </Modal>
 }

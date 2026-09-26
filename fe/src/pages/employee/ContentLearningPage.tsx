@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { adminErrorMessage } from '../../api/adminError.ts'
 import { employeeLearningApi } from '../../api/employeeLearningApi.ts'
@@ -30,18 +30,20 @@ function ContentLearning({ enrollmentId, contentId }: { enrollmentId: number; co
   const query = useRemote(useCallback((signal: AbortSignal) => employeeLearningApi.detail(enrollmentId, signal), [enrollmentId]))
   const [detail, setDetail] = useState<MyLearningDetail | null>(null)
   const [pending, setPending] = useState(false)
+  const busy = useRef(false)
   const [error, setError] = useState('')
   const [feedback, setFeedback] = useState('')
   const current = detail ?? query.data
   async function complete() {
-    if (pending) return
+    if (busy.current) return
+    busy.current = true
     setPending(true); setError(''); setFeedback('')
     try {
       const updated = await employeeLearningApi.completeContent(enrollmentId, contentId)
       setDetail(updated)
       setFeedback(updated.status === 'COMPLETED' ? '교육과정을 수료했습니다.' : '학습을 완료했습니다.')
     } catch (cause) { setError(adminErrorMessage(cause)) }
-    finally { setPending(false) }
+    finally { busy.current = false; setPending(false) }
   }
   if (query.loading) return <div className="learning-page"><LoadingState /></div>
   if (query.error) return <div className="learning-page"><ErrorState message={query.error} retry={query.reload} /></div>

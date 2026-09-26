@@ -7,8 +7,10 @@ export function Modal({ title, children, onClose, busy = false }: { title: strin
   useEffect(() => {
     const previous = document.activeElement
     const dialog = ref.current!
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     dialog.showModal()
-    return () => { dialog.close(); if (previous instanceof HTMLElement) previous.focus() }
+    return () => { dialog.close(); document.body.style.overflow = overflow; if (previous instanceof HTMLElement) previous.focus() }
   }, [])
   return <dialog ref={ref} className="admin-modal" aria-labelledby={titleId} aria-busy={busy} onCancel={event => { event.preventDefault(); if (!busy) onClose() }}><div className="modal-heading"><h2 id={titleId}>{title}</h2><button type="button" className="admin-button" disabled={busy} onClick={onClose} aria-label="대화상자 닫기">닫기</button></div>{children}</dialog>
 }

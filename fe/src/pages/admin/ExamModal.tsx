@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { examApi } from '../../api/examApi.ts'
 import { adminErrorCode, adminErrorMessage } from '../../api/adminError.ts'
 import type { Exam, ExamCreateRequest } from '../../api/examTypes.ts'
@@ -13,24 +13,26 @@ export function ExamModal({ courseId, exam, onClose, onSaved, onLocked }: {
   onLocked: () => void
 }) {
   const [pending, setPending] = useState(false)
+  const busy = useRef(false)
   const [error, setError] = useState('')
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (busy.current) return
     const form = new FormData(event.currentTarget)
     const request: ExamCreateRequest = {
       title: String(form.get('title') ?? '').trim(),
       passingScore: Number(form.get('passingScore')),
       maxAttempts: Number(form.get('maxAttempts')),
     }
-    setPending(true); setError('')
+    busy.current = true; setPending(true); setError('')
     try {
       if (exam) await examApi.update(courseId, request)
       else await examApi.create(courseId, request)
       onSaved()
     } catch (cause) {
-      if (adminErrorCode(cause) === 'EXAM_CONFIGURATION_LOCKED') onLocked()
+      if (adminErrorCode(cause) === 'EXAM_CONFIGURATION_LOCKED') { onLocked(); onClose(); return }
       setError(adminErrorMessage(cause))
-    } finally { setPending(false) }
+    } finally { busy.current = false; setPending(false) }
   }
   return <Modal title={exam ? '시험 기본정보 수정' : '시험 만들기'} onClose={onClose} busy={pending}>
     <form className="admin-form" onSubmit={event => void submit(event)}>

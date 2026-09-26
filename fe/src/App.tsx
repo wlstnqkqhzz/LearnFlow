@@ -14,7 +14,6 @@ import { RoleRoute } from './routes/RoleRoute'
 import { HomeRedirect } from './routes/HomeRedirect'
 import { LoginPage } from './pages/auth/LoginPage'
 import { ForbiddenPage } from './pages/auth/ForbiddenPage'
-import { PlaceholderPage } from './pages/auth/PlaceholderPage'
 import { NotFoundPage } from './pages/auth/NotFoundPage'
 import { DepartmentsPage } from './pages/admin/DepartmentsPage'
 import { JobPositionsPage } from './pages/admin/JobPositionsPage'
@@ -60,7 +59,7 @@ export default function App() {
           <Route path="/employee/learning/:enrollmentId" element={<EmployeeLayout title="교육 상세" subtitle="학습 현황과 콘텐츠를 확인합니다."><LearningDetailPage /></EmployeeLayout>} />
           <Route path="/employee/learning/:enrollmentId/content/:contentId" element={<EmployeeLayout title="콘텐츠 학습" subtitle="학습 자료를 열고 진도를 저장합니다."><ContentLearningPage /></EmployeeLayout>} />
         </Route>
-        <Route element={<RoleRoute role="INSTRUCTOR" />}><Route path="/instructor" element={<PlaceholderPage title="강사 교육 공간" />} /></Route>
+        <Route element={<RoleRoute role="INSTRUCTOR" />}><Route path="/instructor" element={<Navigate to="/employee/learning" replace />} /></Route>
         <Route path="/403" element={<ForbiddenPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { adminErrorCode, adminErrorMessage } from '../../api/adminError.ts'
 import { courseApi } from '../../api/courseApi.ts'
@@ -48,6 +48,7 @@ function ExamManagement({ courseId }: { courseId: number }) {
   const [draftOrder, setDraftOrder] = useState<number[] | null>(null)
   const [locked, setLocked] = useState(false)
   const [pending, setPending] = useState(false)
+  const busy = useRef(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const original = useMemo(() => questionQuery.data?.map(question => question.questionId) ?? [], [questionQuery.data])
@@ -57,13 +58,14 @@ function ExamManagement({ courseId }: { courseId: number }) {
   const nextOrder = Math.max(0, ...questions.map(question => question.sortOrder)) + 1
 
   async function mutate(action: () => Promise<void>, message: string) {
-    if (pending) return false
+    if (busy.current) return false
+    busy.current = true
     setPending(true); setError(''); setSuccess('')
     try { await action(); setSuccess(message); return true }
     catch (cause) {
       if (adminErrorCode(cause) === 'EXAM_CONFIGURATION_LOCKED' || adminErrorCode(cause) === 'EXAM_HISTORY_DELETE_CONFLICT') setLocked(true)
       setError(adminErrorMessage(cause)); return false
-    } finally { setPending(false) }
+    } finally { busy.current = false; setPending(false) }
   }
   function reload() { setDraftOrder(null); examQuery.reload(); questionQuery.reload() }
   async function saveOrder() {
