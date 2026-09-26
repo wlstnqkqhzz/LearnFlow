@@ -1,8 +1,8 @@
-import { enrollmentFlow } from '../../data/dashboardMockData'
+import type { Dashboard } from '../../api/dashboardApi'
 import { enrollmentStatus } from '../common/enrollmentStatus'
 
-export function EnrollmentFlow() {
-  const total = enrollmentFlow.reduce((sum, item) => sum + item.count, 0)
+export function EnrollmentFlow({ distribution }: Pick<Dashboard, 'distribution'>) {
+  const { total, counts: enrollmentFlow } = distribution
   return (
     <div className="enrollment-flow">
       <h2>교육 진행 현황</h2>
