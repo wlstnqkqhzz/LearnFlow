@@ -86,7 +86,7 @@ class ServiceValidationTest {
         var courses = mock(com.be.course.repository.CourseRepository.class);
         var members = mock(MemberRepository.class);
         var service = validated(new com.be.course.service.CourseService(courses, members,
-                mock(com.be.assignment.service.AutoAssignmentService.class)));
+                mock(com.be.assignment.service.AutoAssignmentService.class), mock(com.be.coursework.service.AssignmentPolicy.class)));
         assertThatThrownBy(() -> service.create(new com.be.course.dto.CourseCreateRequest(
                 " ", null, null, null, null, new java.math.BigDecimal("100.001"), 0L)))
                 .isInstanceOf(ConstraintViolationException.class);
@@ -122,7 +122,7 @@ class ServiceValidationTest {
                 .isInstanceOf(ConstraintViolationException.class);
         var enrollments = mock(com.be.enrollment.repository.EnrollmentRepository.class);
         var enrollmentService = validated(new com.be.enrollment.service.EnrollmentService(enrollments, courses,
-                mock(MemberRepository.class), Clock.systemUTC(), mock(com.be.notification.service.NotificationService.class)));
+                mock(MemberRepository.class), Clock.systemUTC(), mock(com.be.notification.service.NotificationService.class), mock(com.be.coursework.service.AssignmentPolicy.class)));
         assertThatThrownBy(() -> enrollmentService.assignManually(1L, new com.be.enrollment.dto.ManualEnrollmentRequest(null)))
                 .isInstanceOf(ConstraintViolationException.class);
         verifyNoInteractions(rules, courses, enrollments);

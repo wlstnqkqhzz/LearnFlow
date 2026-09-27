@@ -36,7 +36,7 @@ class AssignmentTriggerTest {
     @BeforeEach
     void setUp() {
         memberService = new MemberService(members, departments, positions, encoder, CLOCK, auto);
-        courseService = new CourseService(courses, members, auto);
+        courseService = new CourseService(courses, members, auto, mock(com.be.coursework.service.AssignmentPolicy.class));
     }
 
     @Test

@@ -29,6 +29,7 @@ public class EnrollmentService {
     private final MemberRepository members;
     private final Clock clock;
     private final com.be.notification.service.NotificationService notifications;
+    private final com.be.coursework.service.AssignmentPolicy assignmentPolicy;
 
     @Transactional
     public EnrollmentResponse assignManually(@NotNull @Positive Long courseId,
@@ -46,6 +47,8 @@ public class EnrollmentService {
         if (enrollments.findExistingForAssignment(member.getId(), courseId).isPresent()) {
             throw new BusinessException(ErrorCode.DUPLICATE_ENROLLMENT);
         }
+        if (assignmentPolicy.blocksEnrollment(course, LocalDate.now(clock.withZone(ZoneId.of("Asia/Seoul")))))
+            throw new BusinessException(ErrorCode.ASSIGNMENT_ENROLLMENT_DEADLINE_PASSED);
         var enrollment = Enrollment.manual(member, course, LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
         try {
             // 기존 @Version Long=0 매핑에서는 merge 경로일 수 있으므로 반환된 관리 엔티티 사용

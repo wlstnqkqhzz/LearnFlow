@@ -30,10 +30,10 @@ class AssignmentWorkflowTest {
         var rules = mock(AssignmentRuleRepository.class);
         var members = mock(MemberRepository.class);
         var enrollments = mock(EnrollmentRepository.class);
-        var auto = new AutoAssignmentService(courses, rules, members, enrollments, CLOCK, mock(EntityManager.class), mock(com.be.notification.service.NotificationService.class));
+        var auto = new AutoAssignmentService(courses, rules, members, enrollments, CLOCK, mock(EntityManager.class), mock(com.be.notification.service.NotificationService.class), mock(com.be.coursework.service.AssignmentPolicy.class));
         var ruleService = new AssignmentRuleService(rules, courses, mock(DepartmentRepository.class),
                 mock(JobPositionRepository.class), auto);
-        var courseService = new CourseService(courses, members, auto);
+        var courseService = new CourseService(courses, members, auto, mock(com.be.coursework.service.AssignmentPolicy.class));
         var course = course(CourseStatus.DRAFT);
         when(courses.findByIdForUpdate(1L)).thenReturn(Optional.of(course));
         when(rules.saveAndFlush(any())).thenAnswer(call -> { id(call.getArgument(0), 100L); return call.getArgument(0); });

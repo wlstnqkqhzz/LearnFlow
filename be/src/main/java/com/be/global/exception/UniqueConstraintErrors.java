@@ -20,6 +20,7 @@ public final class UniqueConstraintErrors {
                     case "uk_members_employee_number" -> ErrorCode.DUPLICATE_EMPLOYEE_NUMBER;
                     case "uk_members_email" -> ErrorCode.DUPLICATE_EMAIL;
                     case "uk_course_contents_course_sort_order" -> ErrorCode.DUPLICATE_CONTENT_SORT_ORDER;
+                    case "uk_assignments_course_sort_order" -> ErrorCode.DUPLICATE_ASSIGNMENT_SORT_ORDER;
                     case "uk_enrollments_member_course" -> ErrorCode.DUPLICATE_ENROLLMENT;
                     case "uk_exams_course" -> ErrorCode.DUPLICATE_EXAM;
                     case "uk_questions_exam_sort_order" -> ErrorCode.DUPLICATE_QUESTION_SORT_ORDER;

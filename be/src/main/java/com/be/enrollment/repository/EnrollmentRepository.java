@@ -12,6 +12,9 @@ import org.springframework.data.repository.query.Param;
 
 // 읽기 응답에 필요한 단일 연관관계만 함께 로드
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
+    @Lock(LockModeType.PESSIMISTIC_FORCE_INCREMENT)
+    @Query("select e from Enrollment e where e.id = :id")
+    Optional<Enrollment> findForCourseworkUpdate(@Param("id") Long id);
     // 상태 변경으로 조회 집합이 줄어도 누락되지 않도록 ID 기반으로 다음 묶음을 조회
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     @Query("""

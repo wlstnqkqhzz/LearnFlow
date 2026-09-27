@@ -25,6 +25,7 @@ public class EnrollmentCompletionService {
     private final CourseContentRepository contents;
     private final ContentProgressRepository progresses;
     private final com.be.notification.service.NotificationService notifications;
+    private final com.be.coursework.repository.AssignmentSubmissionRepository submissions;
 
     // 시험 제출에서도 누락 진도를 0으로 포함하는 동일 요약/판정을 재사용
     @Transactional(propagation = Propagation.MANDATORY)
@@ -53,7 +54,8 @@ public class EnrollmentCompletionService {
     public void evaluate(Enrollment enrollment, ProgressSummary summary, LocalDateTime now) {
         if (enrollment.getStatus() == EnrollmentStatus.IN_PROGRESS && summary.contentConditionSatisfied()
                 && (!exams.existsByCourseId(enrollment.getCourse().getId())
-                    || attempts.existsByEnrollmentIdAndSubmittedAtIsNotNullAndPassedTrue(enrollment.getId()))) {
+                    || attempts.existsByEnrollmentIdAndSubmittedAtIsNotNullAndPassedTrue(enrollment.getId()))
+                && !submissions.hasUnsatisfiedRequired(enrollment.getCourse().getId(), enrollment.getId())) {
             enrollment.completeLearning(now);
             notifications.notify(enrollment, com.be.notification.enums.NotificationType.COURSE_COMPLETED);
         }
@@ -61,4 +63,20 @@ public class EnrollmentCompletionService {
 
     // 평균은 응답 표시용 소수 둘째 자리, 만족 여부는 정확한 배점 합계 비교 결과
     public record ProgressSummary(BigDecimal progressRate, boolean contentConditionSatisfied) {}
+
+    // 제출을 끝낸 학습자를 관리자 채점 지연만으로 만료시키지 않는다.
+    public boolean awaitingRequiredGrading(Enrollment enrollment) {
+        Long courseId = enrollment.getCourse().getId();
+        Long enrollmentId = enrollment.getId();
+        if (enrollment.getStatus() != EnrollmentStatus.IN_PROGRESS
+                || !submissions.hasPendingRequired(courseId, enrollmentId)
+                || submissions.hasMissingOrFailedRequired(courseId, enrollmentId)) return false;
+        if (exams.existsByCourseId(courseId)
+                && !attempts.existsByEnrollmentIdAndSubmittedAtIsNotNullAndPassedTrue(enrollmentId)) return false;
+        var byContent = progresses.findByEnrollmentId(enrollmentId).stream().collect(
+                java.util.stream.Collectors.toMap(p -> p.getCourseContent().getId(), p -> p));
+        var items = contents.findByCourseIdOrderBySortOrderAsc(courseId).stream()
+                .map(c -> ContentProgressResponse.from(c, byContent.get(c.getId()))).toList();
+        return summarize(items, enrollment.getCourse().getPassingProgressRate()).contentConditionSatisfied();
+    }
 }

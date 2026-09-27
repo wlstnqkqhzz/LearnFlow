@@ -54,10 +54,12 @@ class EntityMappingTest {
                     Question.class,
                     QuestionChoice.class,
                     ExamAttempt.class,
-                    ExamAnswer.class
+                    ExamAnswer.class,
+                    com.be.coursework.entity.Assignment.class,
+                    com.be.coursework.entity.AssignmentSubmission.class
             ).forEach(sources::addAnnotatedClass);
             var metadata = sources.buildMetadata();
-            assertThat(metadata.getEntityBindings()).hasSize(13);
+            assertThat(metadata.getEntityBindings()).hasSize(15);
             assertThat(metadata.getCollectionBindings()).hasSize(2);
 
             // 전체 매핑으로 SessionFactory가 정상 생성되는지 확인
@@ -75,7 +77,9 @@ class EntityMappingTest {
                             com.be.enrollment.repository.EnrollmentRepository.class,
                             com.be.member.repository.MemberRepository.class,
                             com.be.exam.repository.ExamAnswerRepository.class,
-                            com.be.exam.repository.ExamAttemptRepository.class)) {
+                            com.be.exam.repository.ExamAttemptRepository.class,
+                            com.be.coursework.repository.AssignmentRepository.class,
+                            com.be.coursework.repository.AssignmentSubmissionRepository.class)) {
                         for (var method : repository.getDeclaredMethods()) {
                             var query = method.getAnnotation(org.springframework.data.jpa.repository.Query.class);
                             if (query != null) assertThat(session.createSelectionQuery(query.value(), Object.class)).isNotNull();
@@ -86,12 +90,15 @@ class EntityMappingTest {
 
             // 테이블 수, 복합 PK, 주요 제약 및 MySQL 저장 옵션 확인
             String ddl = script.toString().toLowerCase(Locale.ROOT);
-            assertThat(ddl.split("create table ").length - 1).isEqualTo(15);
+            assertThat(ddl.split("create table ").length - 1).isEqualTo(17);
             assertThat(ddl).doesNotContain(" enum (", " enum(");
             assertThat(ddl).contains(
                     "primary key (member_id, role)",
                     "primary key (exam_answer_id, question_choice_id)",
                     "uk_enrollments_member_course",
+                    "uk_assignment_submissions_assignment_enrollment",
+                    "chk_submissions_grading",
+                    "idx_submissions_enrollment_passed",
                     "uk_exams_course",
                     "chk_members_status_resigned_at",
                     "chk_assignment_rules_target",
@@ -104,7 +111,7 @@ class EntityMappingTest {
                     "engine=innodb",
                     "default charset=utf8mb4 collate=utf8mb4_unicode_ci"
             );
-            assertThat(ddl.split("auto_increment").length - 1).isEqualTo(13);
+            assertThat(ddl.split("auto_increment").length - 1).isEqualTo(15);
         } finally {
             // 테스트에서 사용한 Hibernate 리소스 해제
             StandardServiceRegistryBuilder.destroy(registry);

@@ -32,6 +32,7 @@ public class AutoAssignmentService {
     private final Clock clock;
     private final EntityManager entityManager;
     private final com.be.notification.service.NotificationService notifications;
+    private final com.be.coursework.service.AssignmentPolicy assignmentPolicy;
 
     // Course OPEN 직후 활성 규칙을 ID 순으로 평가
     public void assignCourse(Long courseId) {
@@ -55,6 +56,7 @@ public class AutoAssignmentService {
         if (member.getStatus() != MemberStatus.ACTIVE) return;
         LocalDate today = LocalDate.now(clock.withZone(SEOUL));
         for (Course course : courses.findOpenForAssignment()) {
+            if (assignmentPolicy.blocksEnrollment(course, today)) continue;
             for (AssignmentRule rule : rules.findActiveForAssignment(course.getId())) {
                 if (matches(rule, member, today)) {
                     assignIfMissing(member, course, rule);
@@ -71,6 +73,7 @@ public class AutoAssignmentService {
 
     // DB에서 ACTIVE 및 직접 소속/입사일 범위로 후보를 줄임
     private void assignTargets(Course course, AssignmentRule rule, LocalDate today) {
+        if (assignmentPolicy.blocksEnrollment(course, today)) return;
         Long departmentId = rule.getDepartment() == null ? null : rule.getDepartment().getId();
         Long positionId = rule.getJobPosition() == null ? null : rule.getJobPosition().getId();
         LocalDate from = rule.getNewEmployeeDays() == null ? null : today.minusDays(rule.getNewEmployeeDays() - 1L);

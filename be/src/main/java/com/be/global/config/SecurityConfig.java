@@ -44,6 +44,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/notifications/me", "/api/notifications/me/unread-count").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/notifications/*/read", "/api/notifications/me/read-all").authenticated()
                         // 관리 하위 경로는 기존 Course GET(INSTRUCTOR 허용)보다 먼저 제한
+                        .requestMatchers("/api/courses/*/assignments", "/api/courses/*/assignments/**",
+                                "/api/courses/*/assignment-submissions", "/api/assignment-submissions/**").hasAnyRole("ADMIN", "INSTRUCTOR")
+                        .requestMatchers(HttpMethod.GET, "/api/enrollments/*/assignments", "/api/enrollments/*/assignments/*").hasRole("EMPLOYEE")
+                        .requestMatchers(HttpMethod.PUT, "/api/enrollments/*/assignments/*/submission").hasRole("EMPLOYEE")
                         .requestMatchers("/api/courses/*/exam", "/api/courses/*/exam/**").hasRole("ADMIN")
                         .requestMatchers("/api/courses/*/assignment-rules", "/api/courses/*/assignment-rules/**",
                                 "/api/courses/*/enrollments", "/api/courses/*/enrollments/**").hasRole("ADMIN")

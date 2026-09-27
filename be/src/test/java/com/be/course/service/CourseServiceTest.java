@@ -35,7 +35,7 @@ class CourseServiceTest {
     final LocalDate end = start.plusDays(30);
 
     @BeforeEach
-    void setUp() { service = new CourseService(courses, members, autoAssignment); }
+    void setUp() { service = new CourseService(courses, members, autoAssignment, mock(com.be.coursework.service.AssignmentPolicy.class)); }
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})

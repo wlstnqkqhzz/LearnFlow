@@ -13,12 +13,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class EnrollmentExpirationProcessor {
     private final EnrollmentRepository enrollments;
     private final com.be.notification.service.NotificationService notifications;
+    private final EnrollmentCompletionService completion;
 
     // 후보 조회 이후 바뀐 상태를 새 영속성 컨텍스트에서 재검증하고 @Version으로 저장
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean expire(Long enrollmentId, LocalDate today) {
         var enrollment = enrollments.findById(enrollmentId);
-        if (enrollment.isEmpty() || !enrollment.get().expireIfOverdue(today)) return false;
+        if (enrollment.isEmpty() || !enrollment.get().getDueDate().isBefore(today)
+                || completion.awaitingRequiredGrading(enrollment.get())
+                || !enrollment.get().expireIfOverdue(today)) return false;
         enrollments.flush();
         notifications.notify(enrollment.get(), com.be.notification.enums.NotificationType.ENROLLMENT_EXPIRED);
         return true;

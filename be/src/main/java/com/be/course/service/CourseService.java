@@ -28,6 +28,7 @@ public class CourseService {
     private final MemberRepository members;
     // 상태 변경 성공 후 같은 트랜잭션에서 배정 처리
     private final AutoAssignmentService autoAssignment;
+    private final com.be.coursework.service.AssignmentPolicy assignmentPolicy;
 
     @Transactional
     public CourseResponse create(@NotNull @Valid CourseCreateRequest request) {
@@ -60,6 +61,7 @@ public class CourseService {
         LocalDate start = request.isStartDatePresent() ? request.getStartDate() : course.getStartDate();
         LocalDate end = request.isEndDatePresent() ? request.getEndDate() : course.getEndDate();
         validateDates(course.getStatus(), start, end);
+        assignmentPolicy.requirePeriod(id, start, end);
         Long instructorId = request.isInstructorIdPresent() ? request.getInstructorId()
                 : course.getInstructor() == null ? null : course.getInstructor().getId();
         Member instructor = instructor(instructorId);
@@ -82,6 +84,7 @@ public class CourseService {
             throw new BusinessException(ErrorCode.INVALID_COURSE_STATUS_TRANSITION);
         }
         validateDates(next, course.getStartDate(), course.getEndDate());
+        if (next == CourseStatus.OPEN) assignmentPolicy.requirePeriod(id, course.getStartDate(), course.getEndDate());
         if (next == CourseStatus.OPEN && course.getInstructor() != null) {
             instructor(course.getInstructor().getId());
         }

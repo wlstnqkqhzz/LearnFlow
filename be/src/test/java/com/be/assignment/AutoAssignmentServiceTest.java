@@ -40,7 +40,7 @@ class AutoAssignmentServiceTest {
     final Map<String, Enrollment> stored = new HashMap<>();
 
     @BeforeEach
-    void setUp() { service = new AutoAssignmentService(courses, rules, members, enrollments, CLOCK, em, mock(com.be.notification.service.NotificationService.class)); }
+    void setUp() { service = new AutoAssignmentService(courses, rules, members, enrollments, CLOCK, em, mock(com.be.notification.service.NotificationService.class), mock(com.be.coursework.service.AssignmentPolicy.class)); }
 
     @ParameterizedTest
     @EnumSource(MemberStatus.class)

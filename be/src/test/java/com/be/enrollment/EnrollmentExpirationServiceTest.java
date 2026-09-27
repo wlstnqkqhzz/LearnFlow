@@ -48,7 +48,7 @@ class EnrollmentExpirationServiceTest {
         context.register(TransactionConfig.class);
         context.registerBean(EnrollmentRepository.class, () -> enrollments);
         context.registerBean(PlatformTransactionManager.class, () -> transactions);
-        context.registerBean(EnrollmentExpirationProcessor.class, () -> new EnrollmentExpirationProcessor(enrollments, notifications));
+        context.registerBean(EnrollmentExpirationProcessor.class, () -> new EnrollmentExpirationProcessor(enrollments, notifications, mock(com.be.enrollment.service.EnrollmentCompletionService.class)));
         context.refresh();
         processor = context.getBean(EnrollmentExpirationProcessor.class);
         service = service(CLOCK);

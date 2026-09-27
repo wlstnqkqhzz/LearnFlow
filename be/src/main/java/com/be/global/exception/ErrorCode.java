@@ -2,6 +2,19 @@ package com.be.global.exception;
 
 // Service와 Entity에서 공통으로 사용하는 업무 오류
 public enum ErrorCode {
+    ASSIGNMENT_NOT_FOUND("해당 과정의 과제를 찾을 수 없습니다."),
+    ASSIGNMENT_SUBMISSION_NOT_FOUND("과제 제출물을 찾을 수 없습니다."),
+    ASSIGNMENT_ACCESS_DENIED("해당 과제에 접근할 수 없습니다."),
+    ASSIGNMENT_CONFIGURATION_LOCKED("DRAFT 과정에서만 과제를 변경할 수 있습니다."),
+    DUPLICATE_ASSIGNMENT_SORT_ORDER("이미 사용 중인 과제 순서입니다."),
+    INVALID_ASSIGNMENT_ORDER("전체 과제 ID를 중복 없이 지정해야 합니다."),
+    INVALID_ASSIGNMENT_DUE_DATE("과제 마감일은 과정 운영 기간 안에 있어야 합니다."),
+    INVALID_ASSIGNMENT_CONTENT("제출 유형에 맞는 텍스트 또는 http/https URL이 필요합니다."),
+    ASSIGNMENT_SUBMISSION_NOT_EDITABLE("종료된 수강에서는 과제를 제출할 수 없습니다."),
+    ASSIGNMENT_ALREADY_PASSED("이미 통과한 과제는 재제출할 수 없습니다."),
+    ASSIGNMENT_ALREADY_GRADED("확정된 채점은 수정할 수 없습니다."),
+    ASSIGNMENT_DEADLINE_PASSED("과제 제출 마감일이 지났습니다."),
+    ASSIGNMENT_ENROLLMENT_DEADLINE_PASSED("필수 과제 마감이 지난 과정은 배정할 수 없습니다."),
     DEPARTMENT_NOT_FOUND("부서를 찾을 수 없습니다."),
     JOB_POSITION_NOT_FOUND("직무를 찾을 수 없습니다."),
     MEMBER_NOT_FOUND("회원을 찾을 수 없습니다."),

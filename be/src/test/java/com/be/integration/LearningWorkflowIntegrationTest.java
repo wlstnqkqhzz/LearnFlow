@@ -84,19 +84,19 @@ class LearningWorkflowIntegrationTest {
     private final ExamAnswerRepository answers = mock(ExamAnswerRepository.class);
     private final com.be.notification.repository.NotificationRepository notificationRepository = mock(com.be.notification.repository.NotificationRepository.class);
     private final com.be.notification.service.NotificationService notifications = new com.be.notification.service.NotificationService(notificationRepository, CLOCK);
-    private final AutoAssignmentService auto = new AutoAssignmentService(courses, rules, members, enrollments, CLOCK, mock(EntityManager.class), notifications);
+    private final AutoAssignmentService auto = new AutoAssignmentService(courses, rules, members, enrollments, CLOCK, mock(EntityManager.class), notifications, mock(com.be.coursework.service.AssignmentPolicy.class));
     private final DepartmentService departmentService = new DepartmentService(departments);
     private final JobPositionService positionService = new JobPositionService(positions);
     private final MemberSupportConfig support = new MemberSupportConfig();
     private final org.springframework.security.crypto.password.PasswordEncoder passwords = support.passwordEncoder();
     private final MemberService memberService = new MemberService(members, departments, positions, passwords, CLOCK, auto);
-    private final CourseService courseService = new CourseService(courses, members, auto);
+    private final CourseService courseService = new CourseService(courses, members, auto, mock(com.be.coursework.service.AssignmentPolicy.class));
     private final CourseContentService contentService = new CourseContentService(courses, contents);
     private final AssignmentRuleService ruleService = new AssignmentRuleService(rules, courses, departments, positions, auto);
     private final ExamConfigurationValidator validator = new ExamConfigurationValidator();
     private final ExamService examService = new ExamService(courses, exams, questions, choices, validator, attempts);
     private final QuestionService questionService = new QuestionService(examService, questions, choices, attempts, answers, validator);
-    private final EnrollmentCompletionService completion = new EnrollmentCompletionService(exams, attempts, contents, progresses, notifications);
+    private final EnrollmentCompletionService completion = new EnrollmentCompletionService(exams, attempts, contents, progresses, notifications, mock(com.be.coursework.repository.AssignmentSubmissionRepository.class));
     private final ContentProgressService progressService = new ContentProgressService(enrollments, contents, progresses, completion, CLOCK, exams);
     private final ExamAttemptService attemptService = new ExamAttemptService(enrollments, courses, exams, attempts, answers, questions,
             choices, validator, new ExamGradingService(), completion, CLOCK, notifications);
@@ -236,7 +236,7 @@ class LearningWorkflowIntegrationTest {
         long courseId = courseService.create(new CourseCreateRequest("수동 교육", null, CourseType.OPTIONAL,
                 TODAY, TODAY.plusDays(10), BigDecimal.TEN, null)).id();
         courseService.changeStatus(courseId, new CourseStatusRequest(CourseStatus.OPEN));
-        var manual = new EnrollmentService(enrollments, courses, members, CLOCK, notifications);
+        var manual = new EnrollmentService(enrollments, courses, members, CLOCK, notifications, mock(com.be.coursework.service.AssignmentPolicy.class));
         var request = new ManualEnrollmentRequest(scenario.principal().memberId());
         var assigned = manual.assignManually(courseId, request);
         assertThat(notificationRows).hasSize(2);
@@ -265,7 +265,7 @@ class LearningWorkflowIntegrationTest {
     void expirationNotifiesOnceForAssignedAndInProgress(boolean started) {
         var scenario = prepare(true, true, false);
         if (started) learn(scenario, "20");
-        var processor = new EnrollmentExpirationProcessor(enrollments, notifications);
+        var processor = new EnrollmentExpirationProcessor(enrollments, notifications, mock(com.be.enrollment.service.EnrollmentCompletionService.class));
         assertThat(processor.expire(scenario.enrollment().getId(), TODAY.plusDays(40))).isTrue();
         assertThat(processor.expire(scenario.enrollment().getId(), TODAY.plusDays(40))).isFalse();
         assertThat(notificationRows).hasSize(2);
@@ -315,7 +315,7 @@ class LearningWorkflowIntegrationTest {
         var startedAt = scenario.enrollment().getStartedAt();
         var source = scenario.enrollment().getAssignmentSource();
         var rule = scenario.enrollment().getAssignmentRule();
-        var expiration = new EnrollmentExpirationService(enrollments, new EnrollmentExpirationProcessor(enrollments, notifications),
+        var expiration = new EnrollmentExpirationService(enrollments, new EnrollmentExpirationProcessor(enrollments, notifications, mock(com.be.enrollment.service.EnrollmentCompletionService.class)),
                 Clock.offset(CLOCK, Duration.ofDays(40)));
         assertThat(expiration.expireOverdueEnrollments().expiredCount()).isEqualTo(1);
         assertThat(expiration.expireOverdueEnrollments().expiredCount()).isZero();
