@@ -2,6 +2,19 @@ import axios from 'axios'
 import { apiErrorMessage } from './apiError.ts'
 
 const messages: Record<string, string> = {
+  ASSIGNMENT_NOT_FOUND: '과제를 찾을 수 없습니다. 목록을 다시 확인해 주세요.',
+  ASSIGNMENT_SUBMISSION_NOT_FOUND: '제출물을 찾을 수 없습니다.',
+  ASSIGNMENT_ACCESS_DENIED: '이 과정의 과제 또는 제출물에 접근할 권한이 없습니다.',
+  ASSIGNMENT_CONFIGURATION_LOCKED: '초안 과정에서만 과제를 변경할 수 있습니다. 과정 상태를 다시 확인해 주세요.',
+  DUPLICATE_ASSIGNMENT_SORT_ORDER: '이미 사용 중인 과제 순서입니다. 목록을 새로고침해 주세요.',
+  INVALID_ASSIGNMENT_ORDER: '과제 목록이 변경되었습니다. 새로고침 후 다시 정렬해 주세요.',
+  INVALID_ASSIGNMENT_DUE_DATE: '과제 마감일은 과정 운영 기간 안에 있어야 합니다.',
+  INVALID_ASSIGNMENT_CONTENT: '올바른 텍스트 또는 http/https URL을 입력해 주세요.',
+  ASSIGNMENT_SUBMISSION_NOT_EDITABLE: '종료된 수강에는 과제를 제출할 수 없습니다.',
+  ASSIGNMENT_ALREADY_PASSED: '이미 합격한 과제는 재제출할 수 없습니다.',
+  ASSIGNMENT_ALREADY_GRADED: '이미 채점된 제출물입니다. 닫고 새로 조회해 주세요.',
+  ASSIGNMENT_DEADLINE_PASSED: '제출 마감이 지나 제출하거나 재제출할 수 없습니다.',
+  ASSIGNMENT_ENROLLMENT_DEADLINE_PASSED: '필수 과제 마감이 지난 과정에는 배정할 수 없습니다.',
   DEPARTMENT_NOT_FOUND: '부서를 찾을 수 없습니다. 목록을 다시 확인해 주세요.',
   JOB_POSITION_NOT_FOUND: '직무를 찾을 수 없습니다. 목록을 다시 확인해 주세요.',
   MEMBER_NOT_FOUND: '회원을 찾을 수 없습니다.',

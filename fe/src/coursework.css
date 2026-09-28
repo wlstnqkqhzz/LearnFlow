@@ -1,0 +1,12 @@
+.coursework-stack { display: grid; gap: var(--space-4); min-width: 0; }
+.coursework-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-3); }
+.coursework-card { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-4); min-width: 0; }
+.coursework-card h3 { font-size: 15px; margin-bottom: var(--space-2); }
+.coursework-copy { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; max-width: 100%; line-height: 1.7; }
+.coursework-copy a { color: var(--primary-text); text-decoration: underline; }
+.coursework-meta { display: flex; gap: var(--space-4); flex-wrap: wrap; font-size: 12px; }
+.coursework-meta dt { color: var(--text-secondary); }
+.coursework-meta dd { margin: var(--space-1) 0 0; overflow-wrap: anywhere; }
+.coursework-card .section-heading { align-items: start; flex-wrap: wrap; gap: var(--space-3); }
+.coursework-stack > .section-heading { flex-wrap: wrap; gap: var(--space-3); }
+.coursework-card > p { margin-top: var(--space-2); }

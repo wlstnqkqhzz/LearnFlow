@@ -12,6 +12,7 @@ import { CourseForm } from './CourseForm.tsx'
 import { coursePeriod, nextCourseStatus, openValidation } from './courseUtils.ts'
 import { AssignmentRulesSection } from './AssignmentRulesSection.tsx'
 import { CourseExamSection } from './CourseExamSection.tsx'
+import { CourseAssignmentsSection } from '../coursework/CourseAssignmentsSection.tsx'
 
 export function CourseDetailPage() {
   const { courseId } = useParams()
@@ -55,6 +56,7 @@ function CourseDetail({ id }: { id: number }) {
       <CourseContentsSection courseId={id} />
       <AssignmentRulesSection courseId={id} courseStatus={course.status} />
       <CourseExamSection courseId={id} />
+      <CourseAssignmentsSection course={course} />
       {confirmStatus && <ConfirmDialog title={confirmStatus === 'OPEN' ? `“${course.title}” 과정 오픈` : `“${course.title}” 과정 종료`} description={confirmStatus === 'OPEN' ? '과정을 오픈하면 설정된 배정 규칙에 따라 대상 직원에게 교육이 자동 배정될 수 있습니다.' : '종료 후에는 운영 중 상태로 되돌릴 수 없습니다.'} label={confirmStatus === 'OPEN' ? '과정 오픈' : '과정 종료'} tone={confirmStatus === 'OPEN' ? 'primary' : 'danger'} pending={action.pending} error={action.error} onClose={() => setConfirmStatus(null)} onConfirm={() => void changeStatus()} />}
     </>}
   </div>

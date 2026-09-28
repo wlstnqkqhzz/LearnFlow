@@ -5,6 +5,8 @@ import './auth.css'
 import './admin.css'
 import './employee.css'
 import './employee-exam.css'
+import './coursework.css'
+import { InstructorCoursesPage, InstructorCourseworkPage } from './pages/coursework/InstructorCourseworkPage'
 import { EmployeeExamPage } from './pages/employee/EmployeeExamPage'
 import { EmployeeExamResultPage } from './pages/employee/EmployeeExamResultPage'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
@@ -59,7 +61,11 @@ export default function App() {
           <Route path="/employee/learning/:enrollmentId" element={<EmployeeLayout title="교육 상세" subtitle="학습 현황과 콘텐츠를 확인합니다."><LearningDetailPage /></EmployeeLayout>} />
           <Route path="/employee/learning/:enrollmentId/content/:contentId" element={<EmployeeLayout title="콘텐츠 학습" subtitle="학습 자료를 열고 진도를 저장합니다."><ContentLearningPage /></EmployeeLayout>} />
         </Route>
-        <Route element={<RoleRoute role="INSTRUCTOR" />}><Route path="/instructor" element={<Navigate to="/employee/learning" replace />} /></Route>
+        <Route element={<RoleRoute role="INSTRUCTOR" />}>
+          <Route path="/instructor" element={<Navigate to="/instructor/courses" replace />} />
+          <Route path="/instructor/courses" element={<AppLayout title="담당 과정" subtitle="담당 과정의 과제와 제출물을 관리합니다"><InstructorCoursesPage /></AppLayout>} />
+          <Route path="/instructor/courses/:courseId/assignments" element={<AppLayout title="과제 관리" subtitle="과제 구성과 제출물 채점을 관리합니다"><InstructorCourseworkPage /></AppLayout>} />
+        </Route>
         <Route path="/403" element={<ForbiddenPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />

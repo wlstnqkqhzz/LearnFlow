@@ -15,10 +15,16 @@ export function AppSidebar() {
   const { pathname } = useLocation()
   const examDetail = /^\/admin\/courses\/\d+\/exam\/?$/.test(pathname)
   const { user } = useAuth()
+  const instructorView = pathname.startsWith('/instructor')
+  const visibleMenu = instructorView ? [
+    { label: '담당 과정 / 과제', icon: 'book' as IconName, to: '/instructor/courses' },
+    ...(user?.roles.includes('EMPLOYEE') ? [{ label: '내 교육', icon: 'clipboard' as IconName, to: '/employee/learning' }] : []),
+    ...(user?.roles.includes('ADMIN') ? [{ label: '관리자 대시보드', icon: 'dashboard' as IconName, to: '/admin/dashboard' }] : []),
+  ] : menu
   const label = userLabel(user)
   return <aside className="sidebar">
-    <Link to="/admin/dashboard" className="brand" aria-label="LearnFlow 대시보드"><span className="brand-symbol">LF</span><span className="brand-copy"><strong>LearnFlow</strong><small>기업 러닝 플랫폼</small></span></Link>
-    <nav aria-label="관리자 메뉴"><p className="nav-caption">메뉴</p><ul>{menu.map(({ label, icon, to }) => <li key={icon}>
+    <Link to={instructorView ? '/instructor/courses' : '/admin/dashboard'} className="brand" aria-label={instructorView ? 'LearnFlow 담당 과정' : 'LearnFlow 대시보드'}><span className="brand-symbol">LF</span><span className="brand-copy"><strong>LearnFlow</strong><small>기업 러닝 플랫폼</small></span></Link>
+    <nav aria-label={instructorView ? '강사 메뉴' : '관리자 메뉴'}><p className="nav-caption">메뉴</p><ul>{visibleMenu.map(({ label, icon, to }) => <li key={icon}>
       <Link className={`nav-item${(examDetail ? to === '/admin/exams' : pathname === to || pathname.startsWith(`${to}/`)) ? ' active' : ''}`} aria-current={(examDetail ? to === '/admin/exams' : pathname === to || pathname.startsWith(`${to}/`)) ? 'page' : undefined} to={to} aria-label={label}><Icon name={icon} /><span>{label}</span></Link>
     </li>)}</ul></nav>
     <div className="sidebar-user"><span className="avatar avatar-soft" aria-hidden="true">{label[0]}</span><div className="user-copy"><strong>{label}</strong><small title={user?.email}>{user?.email}</small></div><LogoutButton compact /></div>
