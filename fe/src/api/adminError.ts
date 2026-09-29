@@ -2,6 +2,11 @@ import axios from 'axios'
 import { apiErrorMessage } from './apiError.ts'
 
 const messages: Record<string, string> = {
+  CERTIFICATE_NOT_ELIGIBLE: '수료가 완료된 교육만 수료증을 발급할 수 있습니다. 교육 상태를 다시 확인해 주세요.',
+  CERTIFICATE_ACCESS_DENIED: '이 수강의 수료증에 접근할 권한이 없습니다.',
+  CERTIFICATE_NOT_FOUND: '발급된 수료증이 없습니다. 다운로드를 다시 시도해 주세요.',
+  CERTIFICATE_PDF_GENERATION_FAILED: '수료증 PDF를 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+  CERTIFICATE_INVALID_PDF: '올바른 수료증 PDF를 받지 못했습니다. 다시 시도해 주세요.',
   ASSIGNMENT_NOT_FOUND: '과제를 찾을 수 없습니다. 목록을 다시 확인해 주세요.',
   ASSIGNMENT_SUBMISSION_NOT_FOUND: '제출물을 찾을 수 없습니다.',
   ASSIGNMENT_ACCESS_DENIED: '이 과정의 과제 또는 제출물에 접근할 권한이 없습니다.',

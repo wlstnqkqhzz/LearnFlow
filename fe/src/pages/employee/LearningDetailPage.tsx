@@ -4,6 +4,7 @@ import { employeeLearningApi } from '../../api/employeeLearningApi.ts'
 import type { LearningContentProgress, MyLearningDetail } from '../../api/learningTypes.ts'
 import { ErrorState, LoadingState } from '../../components/admin/AdminUI.tsx'
 import { ProgressBar } from '../../components/common/Progress.tsx'
+import { CertificateDownload } from '../../components/certificate/CertificateDownload.tsx'
 import { useRemote } from '../../hooks/useRemote.ts'
 import { LearningStatusBadge } from './LearningPage.tsx'
 import { EmployeeExamSection } from './EmployeeExamSection.tsx'
@@ -20,7 +21,7 @@ function LearningContentRow({ enrollmentId, content, terminal, index }: { enroll
 }
 
 export function LearningSummary({ detail }: { detail: MyLearningDetail }) {
-  return <section className="surface learning-summary"><div className="learning-summary-title"><div className="learning-badges"><span className="status-badge tone-primary">{learningCourseTypes[detail.courseType]}</span><LearningStatusBadge status={detail.status} /></div><h2>{detail.courseTitle}</h2><p>{detail.courseDescription || '등록된 과정 설명이 없습니다.'}</p></div><dl><div><dt>운영 기간</dt><dd>{learningPeriod(detail.courseStartDate, detail.courseEndDate)}</dd></div><div><dt>마감</dt><dd>{dueLabel(detail.dueDate)}</dd></div><div><dt>강사</dt><dd>{detail.instructorName ?? '강사 미지정'}</dd></div>{detail.completedAt && <div><dt>수료일</dt><dd>{utcDateInSeoul(detail.completedAt)}</dd></div>}</dl></section>
+  return <section className="surface learning-summary"><div className="learning-summary-title"><div className="learning-badges"><span className="status-badge tone-primary">{learningCourseTypes[detail.courseType]}</span><LearningStatusBadge status={detail.status} /></div><h2>{detail.courseTitle}</h2><p>{detail.courseDescription || '등록된 과정 설명이 없습니다.'}</p><CertificateDownload key={detail.enrollmentId} enrollmentId={detail.enrollmentId} status={detail.status} /></div><dl><div><dt>운영 기간</dt><dd>{learningPeriod(detail.courseStartDate, detail.courseEndDate)}</dd></div><div><dt>마감</dt><dd>{dueLabel(detail.dueDate)}</dd></div><div><dt>강사</dt><dd>{detail.instructorName ?? '강사 미지정'}</dd></div>{detail.completedAt && <div><dt>수료일</dt><dd>{utcDateInSeoul(detail.completedAt)}</dd></div>}</dl></section>
 }
 
 export function LearningDetailPage() {
