@@ -2,6 +2,10 @@ package com.be.global.exception;
 
 // Service와 Entity에서 공통으로 사용하는 업무 오류
 public enum ErrorCode {
+    CERTIFICATE_NOT_ELIGIBLE("수료일이 기록된 COMPLETED 수강에만 수료증을 발급할 수 있습니다."),
+    CERTIFICATE_ACCESS_DENIED("해당 수강의 수료증에 접근할 수 없습니다."),
+    CERTIFICATE_NOT_FOUND("발급된 수료증이 없습니다."),
+    CERTIFICATE_PDF_GENERATION_FAILED("수료증 PDF를 생성하지 못했습니다. 잠시 후 다시 시도해주세요."),
     ASSIGNMENT_NOT_FOUND("해당 과정의 과제를 찾을 수 없습니다."),
     ASSIGNMENT_SUBMISSION_NOT_FOUND("과제 제출물을 찾을 수 없습니다."),
     ASSIGNMENT_ACCESS_DENIED("해당 과제에 접근할 수 없습니다."),

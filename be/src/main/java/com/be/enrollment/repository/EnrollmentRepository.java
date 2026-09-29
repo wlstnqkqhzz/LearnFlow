@@ -12,6 +12,11 @@ import org.springframework.data.repository.query.Param;
 
 // 읽기 응답에 필요한 단일 연관관계만 함께 로드
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
+    // 수료증 최초 발급만 직렬화. EntityGraph/강제 버전 증가는 사용하지 않는다.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from Enrollment e where e.id = :id")
+    Optional<Enrollment> findForCertificateIssue(@Param("id") Long id);
+
     @Lock(LockModeType.PESSIMISTIC_FORCE_INCREMENT)
     @Query("select e from Enrollment e where e.id = :id")
     Optional<Enrollment> findForCourseworkUpdate(@Param("id") Long id);

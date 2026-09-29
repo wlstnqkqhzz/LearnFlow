@@ -52,7 +52,9 @@ replay_pid*.log
 Thumbs.db
 
 # Docs
-/docs
+/docs/*
+!/docs/LearnFlow.sql
+!/docs/certificates.sql
 *.[mM][dD]
 
 # Personal UI preview (keep automated tests tracked)
