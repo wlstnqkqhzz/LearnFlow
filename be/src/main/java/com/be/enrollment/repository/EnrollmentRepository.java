@@ -39,8 +39,9 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     Optional<Enrollment> findForExamUpdate(@Param("id") Long id);
 
     // 서로 다른 콘텐츠의 동시 수정도 동일 수강 버전으로 충돌 감지하여 수료 판정 누락 방지
+    // fetch graph를 결합하면 버전이 없는 Course/Member에도 강제 버전 잠금이 전파된다.
+    // 연관관계는 서비스 트랜잭션 안에서 지연 조회하고 수강만 잠근다.
     @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-    @EntityGraph(attributePaths = {"member", "course"})
     @Query("select e from Enrollment e where e.id = :id")
     Optional<Enrollment> findForProgressUpdate(@Param("id") Long id);
 
