@@ -230,7 +230,7 @@ class CourseApiTest {
 
     private CourseResponse course() {
         return new CourseResponse(1L, "교육", null, CourseType.MANDATORY, CourseStatus.DRAFT,
-                null, null, new BigDecimal("100.00"), null, null, null, null);
+                null, null, new BigDecimal("100.00"), null, null, null, null, null, null);
     }
 
     @Test

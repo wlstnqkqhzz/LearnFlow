@@ -11,6 +11,9 @@ import org.springframework.data.repository.query.Param;
 
 // 교육과정 조회 및 변경 직렬화
 public interface CourseRepository extends JpaRepository<Course, Long> {
+    Optional<Course> findByRetrainingPolicyIdAndOccurrenceNumber(Long policyId, Integer number);
+    boolean existsByRetrainingPolicyIdAndStatus(Long policyId, CourseStatus status);
+    Page<Course> findByRetrainingPolicyId(Long policyId, Pageable pageable);
     // 회원 변경 트리거에서 최신 OPEN 과정만 잠금 조회 (RR 스냅샷에 의한 누락 방지)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from Course c where c.status = com.be.course.enums.CourseStatus.OPEN order by c.id")

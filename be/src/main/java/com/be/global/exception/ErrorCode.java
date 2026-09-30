@@ -2,6 +2,16 @@ package com.be.global.exception;
 
 // Service와 Entity에서 공통으로 사용하는 업무 오류
 public enum ErrorCode {
+    RETRAINING_POLICY_NOT_FOUND("재교육 정책을 찾을 수 없습니다."),
+    INVALID_RETRAINING_SCHEDULE("재교육 일정 또는 제목 설정이 올바르지 않습니다."),
+    INVALID_RETRAINING_OCCURRENCE("현재 다음 회차를 지정해야 합니다."),
+    RETRAINING_SCHEDULE_LOCKED("회차 처리 후에는 원본 및 핵심 일정을 변경할 수 없습니다."),
+    RETRAINING_DISABLED("중지된 재교육 정책입니다."),
+    RETRAINING_OVERDUE("종료일 또는 필수 과제 마감이 지난 회차입니다. 건너뛰기를 검토해주세요."),
+    RETRAINING_DRAFT_PENDING("이전 회차가 DRAFT이므로 자동 생성을 보류합니다."),
+    RETRAINING_NOT_OVERDUE("아직 마감되지 않은 회차는 건너뛸 수 없습니다."),
+    RETRAINING_SOURCE_INVALID("시작일이 있는 원본과 새 기간에 맞는 과제 구성이 필요합니다."),
+    RETRAINING_ACTIVE_RULE_REQUIRED("자동 공개에는 활성 배정 규칙이 필요합니다."),
     CERTIFICATE_NOT_ELIGIBLE("수료일이 기록된 COMPLETED 수강에만 수료증을 발급할 수 있습니다."),
     CERTIFICATE_ACCESS_DENIED("해당 수강의 수료증에 접근할 수 없습니다."),
     CERTIFICATE_NOT_FOUND("발급된 수료증이 없습니다."),

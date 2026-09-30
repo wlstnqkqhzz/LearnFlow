@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class EntityMappingTest {
 
-    // 13개 엔티티와 2개 연결 테이블의 스키마 생성 결과 검증
+    // 교육·배정·재교육 매핑과 2개 연결 테이블의 스키마 생성 결과 검증
     @Test
     void generatesMysqlSchemaWithoutConnectingToDatabase() {
         // 실제 DB 대신 메모리에 DDL을 생성하도록 설정
@@ -56,10 +56,11 @@ class EntityMappingTest {
                     ExamAttempt.class,
                     ExamAnswer.class,
                     com.be.coursework.entity.Assignment.class,
-                    com.be.coursework.entity.AssignmentSubmission.class
+                    com.be.coursework.entity.AssignmentSubmission.class,
+                    com.be.retraining.entity.RetrainingPolicy.class
             ).forEach(sources::addAnnotatedClass);
             var metadata = sources.buildMetadata();
-            assertThat(metadata.getEntityBindings()).hasSize(15);
+            assertThat(metadata.getEntityBindings()).hasSize(16);
             assertThat(metadata.getCollectionBindings()).hasSize(2);
 
             // 전체 매핑으로 SessionFactory가 정상 생성되는지 확인
@@ -79,7 +80,8 @@ class EntityMappingTest {
                             com.be.exam.repository.ExamAnswerRepository.class,
                             com.be.exam.repository.ExamAttemptRepository.class,
                             com.be.coursework.repository.AssignmentRepository.class,
-                            com.be.coursework.repository.AssignmentSubmissionRepository.class)) {
+                            com.be.coursework.repository.AssignmentSubmissionRepository.class,
+                            com.be.retraining.repository.RetrainingPolicyRepository.class)) {
                         for (var method : repository.getDeclaredMethods()) {
                             var query = method.getAnnotation(org.springframework.data.jpa.repository.Query.class);
                             if (query != null) assertThat(session.createSelectionQuery(query.value(), Object.class)).isNotNull();
@@ -90,12 +92,17 @@ class EntityMappingTest {
 
             // 테이블 수, 복합 PK, 주요 제약 및 MySQL 저장 옵션 확인
             String ddl = script.toString().toLowerCase(Locale.ROOT);
-            assertThat(ddl.split("create table ").length - 1).isEqualTo(17);
+            assertThat(ddl.split("create table ").length - 1).isEqualTo(18);
             assertThat(ddl).doesNotContain(" enum (", " enum(");
             assertThat(ddl).contains(
                     "primary key (member_id, role)",
                     "primary key (exam_answer_id, question_choice_id)",
                     "uk_enrollments_member_course",
+                    "uk_courses_retraining_occurrence",
+                    "chk_courses_retraining",
+                    "fk_courses_retraining",
+                    "fk_retraining_source",
+                    "idx_retraining_due",
                     "uk_assignment_submissions_assignment_enrollment",
                     "chk_submissions_grading",
                     "idx_submissions_enrollment_passed",
@@ -111,7 +118,7 @@ class EntityMappingTest {
                     "engine=innodb",
                     "default charset=utf8mb4 collate=utf8mb4_unicode_ci"
             );
-            assertThat(ddl.split("auto_increment").length - 1).isEqualTo(15);
+            assertThat(ddl.split("auto_increment").length - 1).isEqualTo(16);
         } finally {
             // 테스트에서 사용한 Hibernate 리소스 해제
             StandardServiceRegistryBuilder.destroy(registry);

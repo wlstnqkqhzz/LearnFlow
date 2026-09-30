@@ -20,12 +20,14 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "courses",
+        uniqueConstraints = @UniqueConstraint(name = "uk_courses_retraining_occurrence", columnNames = {"retraining_policy_id", "occurrence_number"}),
         options = "DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         indexes = {
                 @Index(name = "idx_courses_instructor_status", columnList = "instructor_id, status"),
                 @Index(name = "idx_courses_status_period", columnList = "status, start_date, end_date")
         },
         check = {
+                @CheckConstraint(name = "chk_courses_retraining", constraint = "(retraining_policy_id IS NULL AND occurrence_number IS NULL) OR (retraining_policy_id IS NOT NULL AND occurrence_number IS NOT NULL AND occurrence_number > 0)"),
                 @CheckConstraint(name = "chk_courses_passing_progress_rate",
                         constraint = "passing_progress_rate BETWEEN 0 AND 100"),
                 @CheckConstraint(name = "chk_courses_period",
@@ -44,6 +46,20 @@ public class Course extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "retraining_policy_id", updatable = false,
+            foreignKey = @ForeignKey(name = "fk_courses_retraining", options = "ON DELETE RESTRICT ON UPDATE RESTRICT"))
+    private com.be.retraining.entity.RetrainingPolicy retrainingPolicy;
+
+    @Column(name = "occurrence_number", updatable = false)
+    private Integer occurrenceNumber;
+
+    public void identifyOccurrence(com.be.retraining.entity.RetrainingPolicy policy, int number) {
+        if (id != null || retrainingPolicy != null || number < 1) throw new IllegalStateException("Immutable occurrence identity");
+        retrainingPolicy = java.util.Objects.requireNonNull(policy);
+        occurrenceNumber = number;
+    }
 
     // 교육과정명
     @Column(name = "title", nullable = false, length = 200)

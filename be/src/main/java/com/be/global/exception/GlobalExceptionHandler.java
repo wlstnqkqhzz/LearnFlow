@@ -29,6 +29,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleBusiness(BusinessException exception) {
         ErrorCode code = exception.getErrorCode();
         HttpStatus status = switch (code) {
+            case RETRAINING_POLICY_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case INVALID_RETRAINING_SCHEDULE, RETRAINING_SOURCE_INVALID -> HttpStatus.BAD_REQUEST;
+            case INVALID_RETRAINING_OCCURRENCE, RETRAINING_SCHEDULE_LOCKED, RETRAINING_DISABLED,
+                    RETRAINING_OVERDUE, RETRAINING_DRAFT_PENDING, RETRAINING_NOT_OVERDUE,
+                    RETRAINING_ACTIVE_RULE_REQUIRED -> HttpStatus.CONFLICT;
             case DEPARTMENT_NOT_FOUND, JOB_POSITION_NOT_FOUND, MEMBER_NOT_FOUND,
                     COURSE_NOT_FOUND, COURSE_CONTENT_NOT_FOUND, ASSIGNMENT_RULE_NOT_FOUND,
                     ENROLLMENT_NOT_FOUND, EXAM_NOT_FOUND, QUESTION_NOT_FOUND, QUESTION_CHOICE_NOT_FOUND,

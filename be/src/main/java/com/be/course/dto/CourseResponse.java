@@ -9,12 +9,14 @@ import java.time.*;
 public record CourseResponse(Long id, String title, String description, CourseType courseType,
                              CourseStatus status, LocalDate startDate, LocalDate endDate,
                              BigDecimal passingProgressRate, Long instructorId, String instructorName,
-                             LocalDateTime createdAt, LocalDateTime updatedAt) {
+                             LocalDateTime createdAt, LocalDateTime updatedAt,
+                             Long retrainingPolicyId, Integer occurrenceNumber) {
     public static CourseResponse from(Course course) {
         var instructor = course.getInstructor();
         return new CourseResponse(course.getId(), course.getTitle(), course.getDescription(),
                 course.getCourseType(), course.getStatus(), course.getStartDate(), course.getEndDate(),
                 course.getPassingProgressRate(), instructor == null ? null : instructor.getId(),
-                instructor == null ? null : instructor.getName(), course.getCreatedAt(), course.getUpdatedAt());
+                instructor == null ? null : instructor.getName(), course.getCreatedAt(), course.getUpdatedAt(),
+                course.getRetrainingPolicy() == null ? null : course.getRetrainingPolicy().getId(), course.getOccurrenceNumber());
     }
 }

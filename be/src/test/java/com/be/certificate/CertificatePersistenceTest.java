@@ -44,7 +44,7 @@ class CertificatePersistenceTest {
 
     @BeforeEach void schema() {
         when(clock.instant()).thenReturn(CLOCK.instant());
-        jdbc.execute("CREATE TABLE courses(id BIGINT PRIMARY KEY,title VARCHAR(200),description TEXT,course_type VARCHAR(20),status VARCHAR(20),start_date DATE,end_date DATE,passing_progress_rate DECIMAL(5,2),instructor_id BIGINT,created_at TIMESTAMP,updated_at TIMESTAMP)");
+        jdbc.execute("CREATE TABLE courses(id BIGINT PRIMARY KEY,retraining_policy_id BIGINT,occurrence_number INT,title VARCHAR(200),description TEXT,course_type VARCHAR(20),status VARCHAR(20),start_date DATE,end_date DATE,passing_progress_rate DECIMAL(5,2),instructor_id BIGINT,created_at TIMESTAMP,updated_at TIMESTAMP)");
         jdbc.execute("CREATE TABLE members(id BIGINT PRIMARY KEY,employee_number VARCHAR(50),email VARCHAR(255),password_hash VARCHAR(255),name VARCHAR(100),department_id BIGINT,job_position_id BIGINT,status VARCHAR(20),hire_date DATE,resigned_at TIMESTAMP,created_at TIMESTAMP,updated_at TIMESTAMP)");
         jdbc.execute("CREATE TABLE assignment_rules(id BIGINT PRIMARY KEY,course_id BIGINT,department_id BIGINT,job_position_id BIGINT,rule_type VARCHAR(30),new_employee_days SMALLINT,is_active BOOLEAN,created_at TIMESTAMP,updated_at TIMESTAMP)");
         jdbc.execute("CREATE TABLE enrollments(id BIGINT PRIMARY KEY,member_id BIGINT,course_id BIGINT,status VARCHAR(20),assignment_source VARCHAR(20),assignment_rule_id BIGINT,assigned_at TIMESTAMP,started_at TIMESTAMP,completed_at TIMESTAMP,due_date DATE,version BIGINT,created_at TIMESTAMP,updated_at TIMESTAMP)");
