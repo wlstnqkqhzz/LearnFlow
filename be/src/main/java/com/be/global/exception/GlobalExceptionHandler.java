@@ -29,6 +29,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleBusiness(BusinessException exception) {
         ErrorCode code = exception.getErrorCode();
         HttpStatus status = switch (code) {
+            case PUSH_SUBSCRIPTION_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case PUSH_SUBSCRIPTION_CONFLICT, PUSH_SUBSCRIPTION_LIMIT -> HttpStatus.CONFLICT;
+            case INVALID_PUSH_SUBSCRIPTION -> HttpStatus.BAD_REQUEST;
+            case PUSH_DISABLED -> HttpStatus.SERVICE_UNAVAILABLE;
             case RETRAINING_POLICY_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case INVALID_RETRAINING_SCHEDULE, RETRAINING_SOURCE_INVALID -> HttpStatus.BAD_REQUEST;
             case INVALID_RETRAINING_OCCURRENCE, RETRAINING_SCHEDULE_LOCKED, RETRAINING_DISABLED,

@@ -2,6 +2,11 @@ package com.be.global.exception;
 
 // Service와 Entity에서 공통으로 사용하는 업무 오류
 public enum ErrorCode {
+    PUSH_SUBSCRIPTION_NOT_FOUND("Push 구독을 찾을 수 없습니다."),
+    PUSH_SUBSCRIPTION_CONFLICT("구독을 등록할 수 없습니다. 브라우저에서 구독을 새로 생성해주세요."),
+    PUSH_SUBSCRIPTION_LIMIT("활성 Push 구독은 회원당 최대 10개입니다."),
+    INVALID_PUSH_SUBSCRIPTION("Push 구독 형식 또는 endpoint가 올바르지 않습니다."),
+    PUSH_DISABLED("Push 알림이 비활성화되어 있습니다."),
     RETRAINING_POLICY_NOT_FOUND("재교육 정책을 찾을 수 없습니다."),
     INVALID_RETRAINING_SCHEDULE("재교육 일정 또는 제목 설정이 올바르지 않습니다."),
     INVALID_RETRAINING_OCCURRENCE("현재 다음 회차를 지정해야 합니다."),

@@ -17,6 +17,12 @@ import org.springframework.web.bind.annotation.*;
 public class NotificationController {
     private final NotificationService service;
 
+    @GetMapping("/{notificationId}")
+    public NotificationResponse get(@AuthenticationPrincipal MemberPrincipal principal,
+            @PathVariable @Positive Long notificationId) {
+        return service.get(principal.memberId(), notificationId);
+    }
+
     @GetMapping("/me")
     public PageResponse<NotificationResponse> mine(@AuthenticationPrincipal MemberPrincipal principal,
             @Valid @ModelAttribute NotificationSearchRequest request) {

@@ -69,6 +69,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/departments", "/api/departments/**",
                                 "/api/job-positions", "/api/job-positions/**", "/api/members", "/api/members/**")
                         .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/push/config", "/api/push/subscriptions/*", "/api/notifications/*").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/push/subscriptions").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/push/subscriptions/*").authenticated()
                         .anyRequest().denyAll())
                 .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class)
                 .build();

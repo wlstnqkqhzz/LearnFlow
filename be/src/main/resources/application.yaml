@@ -17,3 +17,18 @@ jwt:
   secret: ${JWT_SECRET}
   access-token-ttl-seconds: ${JWT_ACCESS_TOKEN_TTL_SECONDS}
   refresh-token-ttl-seconds: ${JWT_REFRESH_TOKEN_TTL_SECONDS}
+
+push:
+  enabled: ${PUSH_ENABLED:false}
+  public-key: ${VAPID_PUBLIC_KEY:}
+  private-key: ${VAPID_PRIVATE_KEY:}
+  subject: ${VAPID_SUBJECT:}
+
+# HTTP wire/header and SQL bind logging can disclose subscription credentials.
+logging:
+  level:
+    org.apache.http: OFF
+    nl.martijndwars.webpush: OFF
+    org.jose4j: OFF
+    org.hibernate.orm.jdbc.bind: OFF
+    org.hibernate.orm.jdbc.extract: OFF

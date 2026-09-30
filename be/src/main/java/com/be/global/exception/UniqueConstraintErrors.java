@@ -15,6 +15,7 @@ public final class UniqueConstraintErrors {
                 String name = violation.getConstraintName().replace("`", "");
                 name = name.substring(name.lastIndexOf('.') + 1);
                 ErrorCode code = switch (name) {
+                    case "uk_push_endpoint_hash" -> ErrorCode.PUSH_SUBSCRIPTION_CONFLICT;
                     case "uk_departments_code" -> ErrorCode.DUPLICATE_DEPARTMENT_CODE;
                     case "uk_job_positions_code" -> ErrorCode.DUPLICATE_JOB_POSITION_CODE;
                     case "uk_members_employee_number" -> ErrorCode.DUPLICATE_EMPLOYEE_NUMBER;

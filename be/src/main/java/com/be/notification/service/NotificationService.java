@@ -18,11 +18,18 @@ import org.springframework.transaction.annotation.*;
 public class NotificationService {
     private final NotificationRepository notifications;
     private final Clock clock;
+    private final org.springframework.context.ApplicationEventPublisher events;
 
     // 실제 생성/전이에 성공한 호출부만 사용. 저장 실패는 원래 업무까지 함께 롤백한다.
     @Transactional(propagation = Propagation.MANDATORY)
     public void notify(Enrollment enrollment, NotificationType type) {
-        notifications.save(Notification.create(enrollment, type, now()));
+        var notification = notifications.save(Notification.create(enrollment, type, now()));
+        events.publishEvent(new com.be.notification.NotificationCreated(notification.getId()));
+    }
+
+    public NotificationResponse get(Long memberId, Long id) {
+        return NotificationResponse.from(notifications.findByIdAndMemberId(id, memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND)));
     }
 
     public Page<NotificationResponse> mine(Long memberId, NotificationSearchRequest request) {

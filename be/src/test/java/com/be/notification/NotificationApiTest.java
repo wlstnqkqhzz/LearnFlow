@@ -118,6 +118,14 @@ class NotificationApiTest {
         mvc.perform(get("/api/notifications/me").with(as(3L, Role.ADMIN))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty());
     }
+    @Test void singleNotificationIsOwnedAndDoesNotMarkRead() throws Exception {
+        when(repository.findByIdAndMemberId(1L, 2L)).thenReturn(Optional.of(item));
+        mvc.perform(get("/api/notifications/1").with(as(2L, Role.EMPLOYEE))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.notificationId").value(1)).andExpect(jsonPath("$.readAt").isEmpty());
+        mvc.perform(get("/api/notifications/1").with(as(3L, Role.ADMIN))).andExpect(status().isNotFound());
+        mvc.perform(get("/api/notifications/1")).andExpect(status().isUnauthorized());
+        verify(repository, never()).markRead(any(), any(), any());
+    }
     private RequestPostProcessor as(Long id, Role role) {
         var principal = new MemberPrincipal(id, "test@example.com", Set.of(role));
         return authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));

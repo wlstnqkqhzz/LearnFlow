@@ -83,7 +83,7 @@ class LearningWorkflowIntegrationTest {
     private final ExamAttemptRepository attempts = mock(ExamAttemptRepository.class);
     private final ExamAnswerRepository answers = mock(ExamAnswerRepository.class);
     private final com.be.notification.repository.NotificationRepository notificationRepository = mock(com.be.notification.repository.NotificationRepository.class);
-    private final com.be.notification.service.NotificationService notifications = new com.be.notification.service.NotificationService(notificationRepository, CLOCK);
+    private final com.be.notification.service.NotificationService notifications = new com.be.notification.service.NotificationService(notificationRepository, CLOCK, mock(org.springframework.context.ApplicationEventPublisher.class));
     private final AutoAssignmentService auto = new AutoAssignmentService(courses, rules, members, enrollments, CLOCK, mock(EntityManager.class), notifications, mock(com.be.coursework.service.AssignmentPolicy.class));
     private final DepartmentService departmentService = new DepartmentService(departments);
     private final JobPositionService positionService = new JobPositionService(positions);
