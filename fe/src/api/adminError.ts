@@ -2,6 +2,16 @@ import axios from 'axios'
 import { apiErrorMessage } from './apiError.ts'
 
 const messages: Record<string, string> = {
+  RETRAINING_POLICY_NOT_FOUND: '재교육 정책을 찾을 수 없습니다. 목록을 다시 확인해 주세요.',
+  INVALID_RETRAINING_SCHEDULE: '재교육 제목 또는 일정 설정을 확인해 주세요.',
+  INVALID_RETRAINING_OCCURRENCE: '요청 가능한 회차가 아닙니다. 최신 정책과 생성된 회차를 확인해 주세요.',
+  RETRAINING_SCHEDULE_LOCKED: '회차 생성 또는 skip 이후에는 기준 과정과 핵심 일정을 변경할 수 없습니다. 최신 정책을 다시 조회해 주세요.',
+  RETRAINING_DISABLED: '중지된 재교육 정책입니다. 새 회차를 생성하려면 활성화해 주세요.',
+  RETRAINING_OVERDUE: '종료일 또는 필수 과제 마감이 지난 회차입니다. 지난 회차 건너뛰기를 검토해 주세요.',
+  RETRAINING_DRAFT_PENDING: '이전 회차가 초안이므로 자동 생성이 보류됩니다. 기존 과정을 확인해 주세요.',
+  RETRAINING_NOT_OVERDUE: '아직 종료일 또는 필수 과제 마감이 지나지 않아 건너뛸 수 없습니다.',
+  RETRAINING_SOURCE_INVALID: '기준 과정의 시작일과 새 운영 기간에 맞는 과제 마감일을 확인해 주세요.',
+  RETRAINING_ACTIVE_RULE_REQUIRED: '자동 OPEN을 사용하려면 기준 과정에 활성 배정 규칙이 필요합니다.',
   CERTIFICATE_NOT_ELIGIBLE: '수료가 완료된 교육만 수료증을 발급할 수 있습니다. 교육 상태를 다시 확인해 주세요.',
   CERTIFICATE_ACCESS_DENIED: '이 수강의 수료증에 접근할 권한이 없습니다.',
   CERTIFICATE_NOT_FOUND: '발급된 수료증이 없습니다. 다운로드를 다시 시도해 주세요.',

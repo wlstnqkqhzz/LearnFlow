@@ -22,6 +22,8 @@ import { JobPositionsPage } from './pages/admin/JobPositionsPage'
 import { MembersPage } from './pages/admin/MembersPage'
 import { MemberDetailPage } from './pages/admin/MemberDetailPage'
 import { CoursesPage } from './pages/admin/CoursesPage'
+import { lazy, Suspense } from 'react'
+import { LoadingState } from './components/admin/AdminUI'
 import { CourseCreatePage } from './pages/admin/CourseCreatePage'
 import { CourseDetailPage } from './pages/admin/CourseDetailPage'
 import { EnrollmentsPage } from './pages/admin/EnrollmentsPage'
@@ -31,6 +33,9 @@ import { EmployeeLayout } from './components/layout/EmployeeLayout'
 import { LearningPage } from './pages/employee/LearningPage'
 import { LearningDetailPage } from './pages/employee/LearningDetailPage'
 import { ContentLearningPage } from './pages/employee/ContentLearningPage'
+
+const RetrainingPoliciesPage = lazy(() => import('./pages/admin/RetrainingPoliciesPage').then(module => ({ default: module.RetrainingPoliciesPage })))
+const RetrainingPolicyDetailPage = lazy(() => import('./pages/admin/RetrainingPolicyDetailPage').then(module => ({ default: module.RetrainingPolicyDetailPage })))
 
 export default function App() {
   return (
@@ -47,6 +52,8 @@ export default function App() {
           <Route path="/admin/members/:memberId" element={<AppLayout title="회원 상세" subtitle="회원 정보와 재직 상태를 관리합니다"><MemberDetailPage /></AppLayout>} />
           <Route path="/admin/courses" element={<AppLayout title="교육과정" subtitle="교육과정을 생성하고 운영 상태를 관리합니다"><CoursesPage /></AppLayout>} />
           <Route path="/admin/courses/new" element={<AppLayout title="교육과정 만들기" subtitle="교육과정 기본 정보를 입력합니다"><CourseCreatePage /></AppLayout>} />
+          <Route path="/admin/retraining-policies" element={<AppLayout title="재교육 관리" subtitle="재교육 정책과 신규 교육 회차를 관리합니다"><Suspense fallback={<LoadingState />}><RetrainingPoliciesPage /></Suspense></AppLayout>} />
+          <Route path="/admin/retraining-policies/:policyId" element={<AppLayout title="재교육 정책 상세" subtitle="정책 설정과 생성된 회차를 관리합니다"><Suspense fallback={<LoadingState />}><RetrainingPolicyDetailPage /></Suspense></AppLayout>} />
           <Route path="/admin/courses/:courseId" element={<AppLayout title="교육과정 상세" subtitle="기본 정보, 콘텐츠, 배정 규칙과 시험을 관리합니다"><CourseDetailPage /></AppLayout>} />
           <Route path="/admin/assignments" element={<AppLayout title="교육 배정" subtitle="교육과정을 선택해 자동 배정 규칙을 관리합니다"><CoursesPage assignmentMode /></AppLayout>} />
           <Route path="/admin/enrollments" element={<AppLayout title="수강 현황" subtitle="과정별 배정 및 학습 상태를 조회합니다"><EnrollmentsPage /></AppLayout>} />

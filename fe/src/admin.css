@@ -58,6 +58,8 @@
 .role-options small { color: var(--text-muted); }
 .status-summary { margin: var(--space-4) 0; }
 .course-table { min-width: 980px; }
+.retraining-table { min-width: 1000px; }
+.retraining-result { overflow-wrap: anywhere; }
 .course-editor { max-width: 960px; width: 100%; }
 .course-title-field, .course-description-field { grid-column: 1 / -1; }
 .course-summary { padding: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }

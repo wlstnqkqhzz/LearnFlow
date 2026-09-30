@@ -17,6 +17,8 @@ export type Course = {
   instructorName: string | null
   createdAt: string
   updatedAt: string
+  retrainingPolicyId: number | null
+  occurrenceNumber: number | null
 }
 
 export type CourseSearch = {
