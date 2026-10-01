@@ -14,6 +14,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.*;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.*;
@@ -47,7 +49,11 @@ class PushTransactionTest {
         r.add("jwt.secret", JwtTestSupport::secret); r.add("jwt.access-token-ttl-seconds", () -> 300);
         r.add("jwt.refresh-token-ttl-seconds", () -> 3600);
     }
-    @BeforeEach void resetTasks() { tasks.immediate.clear(); tasks.retries.clear(); tasks.delays.clear(); tasks.accept = true; }
+    @BeforeEach void resetTasks() {
+        tasks.immediate.clear(); tasks.retries.clear(); tasks.delays.clear(); tasks.accept = true;
+        new ResourceDatabasePopulator(new ClassPathResource("push-schema.sql"))
+                .execute(Objects.requireNonNull(jdbc.getDataSource()));
+    }
     @AfterEach void cleanup() {
         jdbc.execute("DROP TABLE push_subscriptions"); jdbc.execute("DROP TABLE notifications");
         jdbc.execute("DROP TABLE enrollments"); jdbc.execute("DROP TABLE members"); jdbc.execute("DROP TABLE courses"); jdbc.execute("DROP TABLE assignment_rules");
@@ -85,6 +91,17 @@ class PushTransactionTest {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM notifications", Long.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT status FROM enrollments WHERE id=3", String.class)).isEqualTo("COMPLETED");
         verify(transport, times(3)).send(any(), any());
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {404, 410})
+    void expiredEndpointDisablesSubscriptionWithoutUndoingBusiness(int status) throws Exception {
+        var subscription = subscriptions.register(2L, request("expired-device"));
+        when(transport.send(any(), any())).thenReturn(new PushTransport.Result(status, null));
+        business(false); tasks.run();
+        assertThat(subscriptions.get(2L, subscription.subscriptionId()).enabled()).isFalse();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM notifications", Long.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT status FROM enrollments WHERE id=3", String.class)).isEqualTo("COMPLETED");
+        assertThat(tasks.retries).isEmpty();
     }
     @Test void executorSaturationDoesNotUndoCommit() {
         tasks.accept = false; business(false);

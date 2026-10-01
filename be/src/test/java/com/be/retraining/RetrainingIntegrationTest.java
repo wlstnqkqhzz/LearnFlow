@@ -35,6 +35,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.*;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -81,6 +83,8 @@ class RetrainingIntegrationTest {
         when(clock.instant()).thenReturn(CLOCK.instant());
         when(clock.withZone(any())).thenAnswer(call -> CLOCK.withZone(call.getArgument(0)));
         jdbc.execute("DROP ALL OBJECTS");
+        new ResourceDatabasePopulator(new ClassPathResource("retraining-schema.sql"))
+                .execute(Objects.requireNonNull(jdbc.getDataSource()));
         jdbc.update("INSERT INTO departments(id,code,name,is_active,created_at,updated_at) VALUES(1,'D','부서',TRUE,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
         jdbc.update("INSERT INTO job_positions(id,code,name,is_active,created_at,updated_at) VALUES(1,'J','직무',TRUE,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
         for (int id = 1; id <= 4; id++) {
