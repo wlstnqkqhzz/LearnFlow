@@ -1,5 +1,7 @@
-import { useRef, useState, type FormEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
+import { pushService } from '../../push/pushService.ts'
+import { Navigate, useSearchParams } from 'react-router-dom'
+import { notificationReturnPath } from '../../components/notification/notificationEntry.ts'
 import { useAuth } from '../../auth/AuthContext'
 import { homePath } from '../../auth/tokenUtils'
 import { apiErrorMessage } from '../../api/apiError'
@@ -7,6 +9,8 @@ import { AuthLoading } from './AuthLoading'
 
 export function LoginPage() {
   const { user, isInitializing, login } = useAuth()
+  const [params] = useSearchParams()
+  const pushNotice = useSyncExternalStore(pushService.subscribe, pushService.getNotice, pushService.getNotice)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -25,7 +29,7 @@ export function LoginPage() {
   }
 
   if (isInitializing) return <AuthLoading />
-  if (user) return <Navigate to={homePath(user)} replace />
+  if (user) return <Navigate to={notificationReturnPath(params.get('notification')) ?? homePath(user)} replace />
   return (
     <main className="auth-screen">
       <div className="login-layout">
@@ -37,6 +41,7 @@ export function LoginPage() {
         <section className="login-card surface" aria-labelledby="login-title">
           <h2 id="login-title">로그인</h2>
           <p className="auth-description">회사에서 발급받은 계정으로 로그인하세요.</p>
+          {pushNotice && <p className="auth-error" role="status">{pushNotice}</p>}
           <form onSubmit={submit} aria-busy={isSubmitting}>
             <div className="auth-field"><label htmlFor="email">이메일</label><input id="email" name="email" type="email" autoComplete="username" autoCapitalize="none" spellCheck={false} required maxLength={255} value={email} onChange={event => setEmail(event.target.value)} placeholder="name@company.com" disabled={isSubmitting} /></div>
             <div className="auth-field"><label htmlFor="password">비밀번호</label><input id="password" name="password" type="password" autoComplete="current-password" required maxLength={128} value={password} onChange={event => setPassword(event.target.value)} placeholder="비밀번호를 입력하세요" disabled={isSubmitting} aria-describedby={error ? 'login-error' : undefined} /></div>

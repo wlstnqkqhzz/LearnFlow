@@ -2,6 +2,8 @@ import { authApi } from '../api/authApi.ts'
 import { refreshAccessToken } from '../api/client.ts'
 import { authSession } from './authSession.ts'
 import type { LoginRequest } from './authTypes.ts'
+import { pushService } from '../push/pushService.ts'
+import { readAccessToken } from './tokenUtils.ts'
 
 let initialization: Promise<void> | null = null
 let logoutFlight: Promise<void> | null = null
@@ -23,9 +25,12 @@ export function initializeAuth() {
 
 export async function login(request: LoginRequest) {
   if (logoutFlight) await logoutFlight
+  if (authSession.getSnapshot().user) await pushService.cleanupForLogout()
   authSession.clear()
   const generation = authSession.getGeneration()
   const response = await authApi.login({ email: request.email.trim(), password: request.password })
+  if (generation !== authSession.getGeneration()) throw new Error('인증 요청이 취소되었습니다.')
+  await pushService.beforeAccount(readAccessToken(response.accessToken).user.memberId)
   return authSession.accept(response, generation)
 }
 
@@ -34,6 +39,7 @@ export function logout() {
   const generation = authSession.getGeneration()
   logoutFlight = (async () => {
     try {
+      await pushService.cleanupForLogout()
       if (authSession.getTokens()) await authApi.logout()
     } catch { /* 네트워크/서버 오류에도 사용자가 요청한 로컬 로그아웃을 완료한다. */ }
     finally { if (generation === authSession.getGeneration()) authSession.clear() }

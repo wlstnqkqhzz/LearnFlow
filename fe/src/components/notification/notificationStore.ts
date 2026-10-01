@@ -1,8 +1,8 @@
 import { notificationApi, type Notification } from '../../api/notificationApi.ts'
 import { authSession } from '../../auth/authSession.ts'
 
-type State = { items: Notification[]; count: number; loading: boolean; busy: boolean; error: string; open: boolean }
-const empty: State = { items: [], count: 0, loading: false, busy: false, error: '', open: false }
+type State = { items: Notification[]; count: number; loading: boolean; busy: boolean; error: string; pushError: string; open: boolean }
+const empty: State = { items: [], count: 0, loading: false, busy: false, error: '', pushError: '', open: false }
 
 // Header 인스턴스의 작은 저장소. 계정 변경 뒤 도착한 응답은 절대 반영하지 않는다.
 export function createNotificationStore() {
@@ -10,6 +10,7 @@ export function createNotificationStore() {
   const memberId = authSession.getSnapshot().user?.memberId
   let state: State = empty
   let sequence = 0
+  let pushPending = false
   const listeners = new Set<() => void>()
   const active = () => memberId !== undefined && generation === authSession.getGeneration()
     && authSession.getSnapshot().user?.memberId === memberId
@@ -44,7 +45,7 @@ export function createNotificationStore() {
     } catch {
       if (request === sequence) publish({ error: '읽음 처리에 실패했습니다. 다시 시도해 주세요.' })
       return false
-    } finally { publish({ busy: false }) }
+    } finally { publish({ busy: false }); if (pushPending) { pushPending = false; void load(true) } }
   }
   async function readAll() {
     if (!active() || state.busy) return
@@ -56,12 +57,17 @@ export function createNotificationStore() {
       publish({ count: 0, items: state.items.map(item => ({ ...item, readAt: item.readAt ?? result.readAt })), busy: false })
       await load(true)
     } catch { publish({ error: '모두 읽음 처리에 실패했습니다. 다시 시도해 주세요.' }) }
-    finally { publish({ busy: false }) }
+    finally { publish({ busy: false }); if (pushPending) { pushPending = false; void load(true) } }
   }
   return {
     getSnapshot: () => active() ? state : empty,
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener) } },
     load, read, readAll,
+    async refreshFromPush() {
+      if (state.busy) { pushPending = true; return }
+      await load(true)
+    },
+    pushDisplayFailed() { publish({ pushError: '브라우저 알림 표시가 실패했습니다. 사이트·OS 알림 설정을 확인해 주세요. 알림 목록은 계속 이용할 수 있습니다.' }) },
     async togglePanel() {
       if (!active()) return
       const open = !state.open

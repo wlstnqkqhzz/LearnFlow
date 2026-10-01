@@ -12,6 +12,7 @@ export type Notification = {
   createdAt: string
 }
 export const notificationApi = {
+  async get(id: number) { return (await apiClient.get<Notification>(`/notifications/${id}`)).data },
   async list(page = 0, size = 20) {
     return (await apiClient.get<PageResponse<Notification>>('/notifications/me', { params: { page, size } })).data
   },

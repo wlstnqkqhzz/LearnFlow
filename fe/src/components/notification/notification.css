@@ -11,3 +11,9 @@
 .notification-meta, .notification-item time, .notification-footer { font-size: 12px; color: var(--text-secondary); }
 .notification-feedback, .notification-footer { padding: 12px; }
 @media (max-width: 640px) { .notification-panel { position: fixed; top: 76px; right: 16px; } }
+.push-settings { padding: 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.push-settings p { margin: 8px 0; }
+.push-settings small { display: block; margin-top: 10px; color: var(--text-secondary); line-height: 1.5; }
+.push-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.push-error { color: var(--danger, #a52b2b); }
+.notification-detail { margin: 20px; padding: 24px; overflow-wrap: anywhere; }

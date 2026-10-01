@@ -33,6 +33,7 @@ import { EmployeeLayout } from './components/layout/EmployeeLayout'
 import { LearningPage } from './pages/employee/LearningPage'
 import { LearningDetailPage } from './pages/employee/LearningDetailPage'
 import { ContentLearningPage } from './pages/employee/ContentLearningPage'
+import { NotificationEntryPage } from './pages/NotificationEntryPage'
 
 const RetrainingPoliciesPage = lazy(() => import('./pages/admin/RetrainingPoliciesPage').then(module => ({ default: module.RetrainingPoliciesPage })))
 const RetrainingPolicyDetailPage = lazy(() => import('./pages/admin/RetrainingPolicyDetailPage').then(module => ({ default: module.RetrainingPolicyDetailPage })))
@@ -43,6 +44,7 @@ export default function App() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
+        <Route path="/notifications/:notificationId" element={<NotificationEntryPage />} />
         <Route element={<RoleRoute role="ADMIN" />}>
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<AppLayout><DashboardPage /></AppLayout>} />

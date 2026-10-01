@@ -1,0 +1,12 @@
+{
+  "id": "/",
+  "name": "LearnFlow",
+  "short_name": "LearnFlow",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#007db3",
+  "icons": [{ "src": "/push-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

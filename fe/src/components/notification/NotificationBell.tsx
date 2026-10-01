@@ -6,6 +6,8 @@ import type { Notification, NotificationType } from '../../api/notificationApi.t
 import { Icon } from '../common/Icon.tsx'
 import { createNotificationStore, notificationPath } from './notificationStore.ts'
 import './notification.css'
+import { PushSettings } from '../../push/PushSettings.tsx'
+import { listenForNotificationChanges } from '../../push/pushMessages.ts'
 
 const labels: Record<NotificationType, string> = {
   ENROLLMENT_ASSIGNED: '교육 배정', COURSE_COMPLETED: '교육 수료', COURSE_FAILED: '교육 실패', ENROLLMENT_EXPIRED: '수강 만료',
@@ -33,7 +35,8 @@ function SignedInBell({ employee }: { employee: boolean }) {
     void store.load()
     const focus = () => { void store.load(store.getSnapshot().open) }
     window.addEventListener('focus', focus)
-    return () => { window.removeEventListener('focus', focus); store.cancel() }
+    const stopPush = listenForNotificationChanges(() => { void store.refreshFromPush() }, store.pushDisplayFailed)
+    return () => { window.removeEventListener('focus', focus); stopPush(); store.cancel() }
   }, [store])
   useEffect(() => {
     if (!open) return
@@ -60,6 +63,8 @@ function SignedInBell({ employee }: { employee: boolean }) {
     </button>
     {open && <section ref={panel} id={panelId} className="notification-panel" aria-label="내 알림" tabIndex={-1}>
       <div className="notification-heading"><strong>알림</strong><button type="button" className="admin-button" disabled={state.busy || state.loading || state.count === 0} onClick={() => void store.readAll()}>모두 읽음</button><button type="button" className="admin-button" onClick={close} aria-label="알림 닫기">닫기</button></div>
+      <PushSettings />
+      {state.pushError && <p className="notification-feedback" role="alert">{state.pushError}</p>}
       {state.error && <div className="notification-feedback" role="alert"><p>{state.error}</p><button className="admin-button" disabled={state.busy || state.loading} onClick={() => void store.load(true)}>다시 조회</button></div>}
       {state.loading && <p className="notification-feedback" role="status">알림을 불러오는 중…</p>}
       <NotificationList items={state.items} busy={state.busy || state.loading} loading={state.loading || !!state.error} onSelect={item => void select(item)} />
