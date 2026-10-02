@@ -1,0 +1,46 @@
+.statistics-page { min-width: 0; }
+.statistics-filters, .statistics-section { padding: var(--space-5); min-width: 0; }
+.statistics-section { overflow: hidden; }
+.statistics-section h2 { font-size: 16px; margin-bottom: var(--space-3); }
+.statistics-section h3 { font-size: 14px; margin-top: var(--space-5); }
+.statistics-applied { font-size: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.statistics-course-picker { margin-top: var(--space-4); max-width: 660px; }
+.statistics-page summary { cursor: pointer; font-size: 12px; padding-block: var(--space-2); }
+.statistics-course-picker > .admin-field { margin-block: var(--space-3); }
+.statistics-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+.statistics-kpis > div { min-width: 0; border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-4); }
+.statistics-kpis dt, .statistics-cohort dt { color: var(--text-secondary); font-size: 12px; }
+.statistics-kpis dd { margin: var(--space-3) 0; font-size: clamp(20px, 2.3vw, 30px); font-weight: 700; overflow-wrap: anywhere; }
+.statistics-kpis dd small { font-size: 12px; margin-left: 5px; font-weight: 400; }
+.statistics-kpis p, .statistics-cohort small { font-size: 11px; color: var(--text-muted); }
+.statistics-cohort { display: flex; flex-wrap: wrap; gap: var(--space-5); margin-top: var(--space-4); }
+.statistics-cohort dd { margin: var(--space-2) 0; font-weight: 600; }
+.statistics-course-table { min-width: 1150px; }
+.statistics-course-table th:first-child { min-width: 180px; }
+.statistics-course-table td:last-child { min-width: 160px; }
+.statistics-department-table { min-width: 840px; }
+.statistics-exam { font-size: 12px; display: grid; gap: var(--space-2); }
+.statistics-exam dd { margin: 0; font-weight: 600; }
+.statistics-chart svg { width: 100%; height: auto; display: block; }
+.statistics-chart svg text { fill: var(--text-secondary); font-size: 12px; }
+.statistics-legend { display: flex; gap: var(--space-4); margin: var(--space-4) 0; font-size: 12px; }
+.statistics-assignment { color: var(--primary-text); }
+.statistics-completion { color: var(--success-text); }
+.statistics-grid { stroke: var(--border); }
+.statistics-axis { stroke: var(--text-muted); }
+.statistics-line { stroke-width: 2; }
+.statistics-line.assignments { stroke: var(--primary-text); }
+.statistics-line.completions { stroke: var(--success-text); stroke-dasharray: 6 4; }
+.statistics-dot.assignments { fill: var(--primary-text); }
+.statistics-dot.completions { fill: var(--success-text); }
+.statistics-chart g:focus { outline: 2px solid var(--primary-text); }
+.statistics-chart-value { min-height: 36px; font-size: 12px; color: var(--text-secondary); }
+.statistics-page .table-scroll { max-width: 100%; overflow-x: auto; }
+@media (max-width: 1100px) { .statistics-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+  .statistics-filters, .statistics-section { padding: var(--space-3); }
+  .statistics-filters .admin-toolbar .admin-field { flex: 1 1 140px; max-width: 100%; }
+  .statistics-kpis { grid-template-columns: minmax(0, 1fr); }
+  .statistics-cohort { gap: var(--space-3); }
+  .statistics-chart svg text { font-size: 16px; }
+}

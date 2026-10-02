@@ -2,6 +2,7 @@ import axios from 'axios'
 import { apiErrorMessage } from './apiError.ts'
 
 const messages: Record<string, string> = {
+  INVALID_STATISTICS_RANGE: '조회 날짜와 필터를 확인해 주세요. 서울 기준 오늘까지 최대 366일을 조회할 수 있습니다.',
   RETRAINING_POLICY_NOT_FOUND: '재교육 정책을 찾을 수 없습니다. 목록을 다시 확인해 주세요.',
   INVALID_RETRAINING_SCHEDULE: '재교육 제목 또는 일정 설정을 확인해 주세요.',
   INVALID_RETRAINING_OCCURRENCE: '요청 가능한 회차가 아닙니다. 최신 정책과 생성된 회차를 확인해 주세요.',

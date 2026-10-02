@@ -36,6 +36,7 @@ import { ContentLearningPage } from './pages/employee/ContentLearningPage'
 import { NotificationEntryPage } from './pages/NotificationEntryPage'
 
 const RetrainingPoliciesPage = lazy(() => import('./pages/admin/RetrainingPoliciesPage').then(module => ({ default: module.RetrainingPoliciesPage })))
+const StatisticsPage = lazy(() => import('./pages/admin/StatisticsPage').then(module => ({ default: module.StatisticsPage })))
 const RetrainingPolicyDetailPage = lazy(() => import('./pages/admin/RetrainingPolicyDetailPage').then(module => ({ default: module.RetrainingPolicyDetailPage })))
 
 export default function App() {
@@ -48,6 +49,7 @@ export default function App() {
         <Route element={<RoleRoute role="ADMIN" />}>
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<AppLayout><DashboardPage /></AppLayout>} />
+          <Route path="/admin/statistics" element={<AppLayout title="교육 통계" subtitle="기간·과정·부서별 교육 운영 성과"><Suspense fallback={<LoadingState />}><StatisticsPage /></Suspense></AppLayout>} />
           <Route path="/admin/departments" element={<AppLayout title="조직 관리" subtitle="부서의 계층과 활성 상태를 관리합니다"><DepartmentsPage /></AppLayout>} />
           <Route path="/admin/job-positions" element={<AppLayout title="직무 관리" subtitle="조직에서 사용하는 직무를 관리합니다"><JobPositionsPage /></AppLayout>} />
           <Route path="/admin/members" element={<AppLayout title="회원 관리" subtitle="조직 구성원과 역할을 관리합니다"><MembersPage /></AppLayout>} />

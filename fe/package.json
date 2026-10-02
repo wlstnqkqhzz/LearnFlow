@@ -22,7 +22,8 @@
     "test:coursework": "node --test tests/coursework.test.mjs",
     "test:certificate": "node --test tests/certificate.test.mjs",
     "test:retraining": "node --test tests/retraining.test.mjs",
-    "test": "npm run test:auth && npm run test:admin && npm run test:course && npm run test:assignment && npm run test:exam && npm run test:learning && npm run test:employee-exam && npm run test:notification && npm run test:push && npm run test:dashboard && npm run test:ui-ux && npm run test:coursework && npm run test:certificate && npm run test:retraining"
+    "test:statistics": "node --test tests/statistics.test.mjs",
+    "test": "npm run test:auth && npm run test:admin && npm run test:course && npm run test:assignment && npm run test:exam && npm run test:learning && npm run test:employee-exam && npm run test:notification && npm run test:push && npm run test:dashboard && npm run test:ui-ux && npm run test:coursework && npm run test:certificate && npm run test:retraining && npm run test:statistics"
   },
   "dependencies": {
     "axios": "^1.20.0",

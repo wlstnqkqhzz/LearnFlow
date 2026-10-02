@@ -9,6 +9,7 @@ const menu: { label: string; icon: IconName; to: string }[] = [
   { label: '조직 관리', icon: 'organization', to: '/admin/departments' }, { label: '직무 관리', icon: 'briefcase', to: '/admin/job-positions' },
   { label: '교육과정', icon: 'book', to: '/admin/courses' }, { label: '교육 배정', icon: 'clipboard', to: '/admin/assignments' },
   { label: '재교육 관리', icon: 'book', to: '/admin/retraining-policies' },
+  { label: '교육 통계', icon: 'chart', to: '/admin/statistics' },
   { label: '수강 현황', icon: 'chart', to: '/admin/enrollments' }, { label: '시험 관리', icon: 'exam', to: '/admin/exams' },
 ]
 
