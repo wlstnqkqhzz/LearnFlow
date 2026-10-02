@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/admin/dashboard").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/statistics", "/api/admin/statistics/**").hasRole("ADMIN")
                         .requestMatchers("/api/retraining-policies", "/api/retraining-policies/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/notifications/me", "/api/notifications/me/unread-count").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/notifications/*/read", "/api/notifications/me/read-all").authenticated()

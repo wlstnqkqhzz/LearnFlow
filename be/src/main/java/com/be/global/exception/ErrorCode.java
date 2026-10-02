@@ -2,6 +2,7 @@ package com.be.global.exception;
 
 // Service와 Entity에서 공통으로 사용하는 업무 오류
 public enum ErrorCode {
+    INVALID_STATISTICS_RANGE("조회 시작일과 종료일, 최대 366일 범위 및 필터 ID를 확인해주세요. 미래 날짜는 조회할 수 없습니다."),
     PUSH_SUBSCRIPTION_NOT_FOUND("Push 구독을 찾을 수 없습니다."),
     PUSH_SUBSCRIPTION_CONFLICT("구독을 등록할 수 없습니다. 브라우저에서 구독을 새로 생성해주세요."),
     PUSH_SUBSCRIPTION_LIMIT("활성 Push 구독은 회원당 최대 10개입니다."),
