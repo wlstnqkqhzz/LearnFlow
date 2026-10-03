@@ -6,6 +6,7 @@ import { contentLabels, editable, routeId, textValue } from '@/learning/api';
 import { learningApi, useLearning } from '@/learning/useLearning';
 import { Progress, Screen, Status } from '@/learning/ui';
 import { ExamSection } from '@/exam/ExamSection';
+import { AssignmentSection } from '@/coursework/AssignmentSection';
 export default function Detail() {
   const params = useLocalSearchParams<{ id: string }>(); const id = routeId(params.id);
   const load = useCallback((signal: AbortSignal) => id ? learningApi.detail(id, signal) : Promise.reject(new Error('Invalid ID')), [id]);
@@ -19,6 +20,7 @@ export default function Detail() {
       {!!detail.instructorName && <Text style={s.subtitle}>강사 {detail.instructorName}</Text>}
       {!editable(detail.status) && <Text style={s.subtitle}>종료된 교육입니다. 콘텐츠 진도를 수정할 수 없습니다.</Text>}
       <ExamSection detail={detail} />
+      <AssignmentSection detail={detail} refreshEnrollment={query.reload} />
       <Text style={s.heading}>학습 콘텐츠</Text>
       {!detail.contents.length && <Text style={s.subtitle}>등록된 콘텐츠가 없습니다.</Text>}
       {detail.contents.map(content => <Link key={content.contentId} href={{ pathname: '/enrollment/[id]/content/[contentId]', params: { id: detail.enrollmentId, contentId: content.contentId } }} asChild><Pressable accessibilityRole="button" style={s.card}>
