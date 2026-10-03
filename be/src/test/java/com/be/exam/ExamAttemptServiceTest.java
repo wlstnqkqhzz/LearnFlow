@@ -31,6 +31,54 @@ import static org.mockito.Mockito.*;
 
 // 저장소만 대체하고 실제 채점·수료 Service와 Entity를 연결한 워크플로 테스트
 class ExamAttemptServiceTest {
+    @Test void eligibilityDoesNotAllocateAndTracksOpenAttempt() {
+        var initial = service.eligibility(10L, owner);
+        assertThat(initial.canStart()).isTrue();
+        assertThat(initial.attemptCount()).isZero();
+        verify(attempts, never()).saveAndFlush(any());
+        var started = service.start(10L, owner).attempt();
+        var open = service.eligibility(10L, owner);
+        assertThat(open.canStart()).isFalse();
+        assertThat(open.canContinue()).isTrue();
+        assertThat(open.openAttemptId()).isEqualTo(started.attemptId());
+        assertThat(open.remainingAttempts()).isEqualTo(2);
+    }
+
+    @Test void eligibilityAllowsRetryThenReportsExhaustionAndFailed() {
+        for (int i = 0; i < 3; i++) {
+            assertThat(service.eligibility(10L, owner).canStart()).isTrue();
+            var attempt = service.start(10L, owner).attempt();
+            service.submit(attempt.attemptId(), owner);
+        }
+        var result = service.eligibility(10L, owner);
+        assertThat(result.canStart()).isFalse();
+        assertThat(result.canContinue()).isFalse();
+        assertThat(result.remainingAttempts()).isZero();
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.FAILED);
+    }
+
+    @Test void eligibilityBlocksPassMissingExamAndOtherOwner() {
+        var started = service.start(10L, owner).attempt();
+        service.saveAnswer(started.attemptId(), 1L, owner, new AnswerSaveRequest(List.of(100L)));
+        service.submit(started.attemptId(), owner);
+        assertThat(service.eligibility(10L, owner).passed()).isTrue();
+        assertThat(service.eligibility(10L, owner).canStart()).isFalse();
+        assertThatThrownBy(() -> service.eligibility(10L, other)).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> service.eligibility(10L, admin)).isInstanceOf(BusinessException.class);
+        when(exams.findByCourseId(1L)).thenReturn(Optional.empty());
+        assertThat(service.eligibility(10L, owner).blockedReason()).isEqualTo("EXAM_NOT_FOUND");
+    }
+
+    @ParameterizedTest @EnumSource(value = EnrollmentStatus.class, names = {"COMPLETED", "FAILED", "EXPIRED"})
+    void eligibilityBlocksTerminalStatus(EnrollmentStatus status) {
+        ReflectionTestUtils.setField(enrollment, "status", status);
+        assertThat(service.eligibility(10L, owner).blockedReason()).isEqualTo("ENROLLMENT_EXAM_NOT_EDITABLE");
+    }
+
+    @Test void eligibilityReportsInvalidConfiguration() {
+        when(questions.findByExamIdOrderBySortOrderAsc(10L)).thenReturn(List.of());
+        assertThat(service.eligibility(10L, owner).blockedReason()).isEqualTo("INVALID_EXAM_CONFIGURATION");
+    }
     final EnrollmentRepository enrollments = mock(EnrollmentRepository.class);
     final CourseRepository courses = mock(CourseRepository.class);
     final ExamRepository exams = mock(ExamRepository.class);

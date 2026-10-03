@@ -50,17 +50,38 @@ public class ExamAttemptService {
         access(enrollment, principal, false);
         editable(enrollment);
         Exam exam = exams.findByCourseId(enrollment.getCourse().getId()).orElseThrow(() -> error(ErrorCode.EXAM_NOT_FOUND));
-        validate(exam);
         var history = attempts.findByEnrollmentIdOrderByAttemptNumberAsc(enrollmentId);
-        if (passed(history)) throw error(ErrorCode.EXAM_ALREADY_PASSED);
+        var blocked = startBlock(enrollment, exam, history);
+        if (blocked != null) throw error(blocked);
         var open = history.stream().filter(a -> a.getSubmittedAt() == null).findFirst();
         if (open.isPresent()) return new StartResult(AttemptResponse.from(open.get(), history.size()), false);
         int last = history.stream().mapToInt(ExamAttempt::getAttemptNumber).max().orElse(0);
-        if (last >= exam.getMaxAttempts() || history.size() >= exam.getMaxAttempts()) throw error(ErrorCode.EXAM_ATTEMPTS_EXHAUSTED);
         var now = now();
         enrollment.startLearning(now);
         var attempt = attempts.saveAndFlush(ExamAttempt.start(enrollment, exam, last + 1, now));
         return new StartResult(AttemptResponse.from(attempt, history.size() + 1), true);
+    }
+
+    public ExamEligibilityResponse eligibility(@NotNull @Positive Long enrollmentId, MemberPrincipal principal) {
+        var enrollment = enrollments.findById(enrollmentId).orElseThrow(() -> error(ErrorCode.ENROLLMENT_NOT_FOUND));
+        access(enrollment, principal, false);
+        var exam = exams.findByCourseId(enrollment.getCourse().getId()).orElse(null);
+        if (exam == null) return new ExamEligibilityResponse(false, false, false, 0, 0, 0, null, ErrorCode.EXAM_NOT_FOUND.name());
+        var history = attempts.findByEnrollmentIdOrderByAttemptNumberAsc(enrollmentId);
+        var open = history.stream().filter(a -> a.getSubmittedAt() == null).findFirst();
+        var blocked = startBlock(enrollment, exam, history);
+        return new ExamEligibilityResponse(blocked == null && open.isEmpty(), blocked == null && open.isPresent(),
+                passed(history), history.size(), exam.getMaxAttempts(), Math.max(0, exam.getMaxAttempts() - history.size()),
+                open.map(ExamAttempt::getId).orElse(null), blocked == null ? null : blocked.name());
+    }
+
+    private ErrorCode startBlock(Enrollment enrollment, Exam exam, List<ExamAttempt> history) {
+        try { editable(enrollment); validate(exam); }
+        catch (BusinessException exception) { return exception.getErrorCode(); }
+        if (passed(history)) return ErrorCode.EXAM_ALREADY_PASSED;
+        if (history.stream().anyMatch(a -> a.getSubmittedAt() == null)) return null;
+        int last = history.stream().mapToInt(ExamAttempt::getAttemptNumber).max().orElse(0);
+        return last >= exam.getMaxAttempts() || history.size() >= exam.getMaxAttempts() ? ErrorCode.EXAM_ATTEMPTS_EXHAUSTED : null;
     }
 
     // 문제 응답은 본인에게만 제공; 관리자는 관리용 문제 API 사용

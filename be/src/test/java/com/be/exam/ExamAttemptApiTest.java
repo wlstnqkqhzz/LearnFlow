@@ -37,6 +37,19 @@ import static org.hamcrest.Matchers.containsString;
 @WebMvcTest(ExamAttemptController.class)
 @Import({SecurityConfig.class, MemberSupportConfig.class, GlobalExceptionHandler.class})
 class ExamAttemptApiTest {
+    @Test void eligibilityEmployeeContractAndRoleGate() throws Exception {
+        when(service.eligibility(10L, owner)).thenReturn(new ExamEligibilityResponse(true, false, false, 0, 3, 3, null, null));
+        mvc.perform(get("/api/enrollments/10/exam-eligibility").with(as(owner))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.canStart").value(true)).andExpect(jsonPath("$.canContinue").value(false))
+                .andExpect(jsonPath("$.remainingAttempts").value(3));
+        for (var role : List.of(Role.ADMIN, Role.INSTRUCTOR)) {
+            mvc.perform(get("/api/enrollments/10/exam-eligibility").with(as(new MemberPrincipal(4L, "user@example.com", Set.of(role)))))
+                    .andExpect(status().isForbidden());
+        }
+        when(service.eligibility(10L, other)).thenThrow(new BusinessException(ErrorCode.EXAM_ACCESS_DENIED));
+        mvc.perform(get("/api/enrollments/10/exam-eligibility").with(as(other))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/enrollments/10/exam-eligibility")).andExpect(status().isUnauthorized());
+    }
     @Autowired MockMvc mvc;
     @MockitoBean ExamAttemptService service;
     @MockitoBean JwtTokenProvider tokens;

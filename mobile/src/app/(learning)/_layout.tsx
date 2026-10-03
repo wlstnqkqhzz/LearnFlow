@@ -1,0 +1,2 @@
+import { Stack } from 'expo-router';
+export default function LearningLayout() { return <Stack screenOptions={{ headerTintColor: '#146baf', headerBackTitle: '뒤로' }}><Stack.Screen name="enrollment/[id]/index" options={{ title: '교육 상세' }} /><Stack.Screen name="enrollment/[id]/content/[contentId]" options={{ title: '콘텐츠 학습' }} /><Stack.Screen name="enrollment/[id]/exam/[attemptId]" options={{ title: '시험', gestureEnabled: false }} /></Stack>; }

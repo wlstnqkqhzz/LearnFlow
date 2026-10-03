@@ -17,6 +17,11 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ExamAttemptController {
     private final ExamAttemptService service;
+    @GetMapping("/api/enrollments/{enrollmentId}/exam-eligibility")
+    public ExamEligibilityResponse eligibility(@PathVariable @Positive Long enrollmentId,
+            @AuthenticationPrincipal MemberPrincipal principal) {
+        return service.eligibility(enrollmentId, principal);
+    }
     @PostMapping("/api/enrollments/{enrollmentId}/exam-attempts")
     public ResponseEntity<AttemptResponse> start(@PathVariable @Positive Long enrollmentId,
             @AuthenticationPrincipal MemberPrincipal principal) {
