@@ -35,14 +35,8 @@ export function createPushStore(api: ReturnType<typeof createPushApi>, identityS
   async function synchronize(ticket: number) {
     publish({ phase: 'binding', busy: true, enabled: false, error: '' });
     await cleanup; guard(ticket);
-    const loaded = await identityStore.get(); guard(ticket); identity = loaded;
-    let version = identity.binding?.version ?? 0;
-    if (identity.binding) {
-      try { version = (await api.get(identity, identity.binding.subscriptionId, controller.signal)).version; }
-      catch (error) { if (status(error) !== 404) throw error; }
-      guard(ticket);
-    }
-    const result = await api.bind(identity, native.platform, version, controller.signal); guard(ticket);
+    const loaded = await identityStore.beginBinding(member!, () => valid(ticket)); guard(ticket); identity = loaded;
+    const result = await api.bind(identity, native.platform, identity.bindingGeneration, controller.signal); guard(ticket);
     await save(ticket, result);
     if (!native.blocker) { const permission = await native.permission(); guard(ticket); publish({ permission }); }
     // Permission alone never enables Push. Only restore the same member's explicit opt-in.
@@ -101,7 +95,9 @@ export function createPushStore(api: ReturnType<typeof createPushApi>, identityS
     on() { return run(async ticket => { try { if (!binding) await synchronize(ticket); await enable(ticket, true); } catch (error) { failed(ticket, error); } }); },
     off() { return run(async ticket => { try { await disable(ticket); } catch (error) { failed(ticket, error); } }); },
     reconcile() {
-      if (member === null || !binding || native.blocker) return Promise.resolve();
+      if (member === null) return Promise.resolve();
+      if (!binding) return run(async ticket => { try { await synchronize(ticket); } catch (error) { failed(ticket, error); } });
+      if (native.blocker) return Promise.resolve();
       return run(async ticket => {
         try {
           if (state.enabled) await enable(ticket, false);
@@ -114,7 +110,7 @@ export function createPushStore(api: ReturnType<typeof createPushApi>, identityS
       generation++; controller.abort(); controller = new AbortController(); work = null; member = null; binding = null; identity = null; registeredToken = null; publish(initial());
       cleanup = (async () => {
         // This runs separately from auth cleanup; next binding waits for its version reconciliation.
-        await identityStore.update({ optedInMember: null });
+        await identityStore.update({ optedInMember: null, bindingMemberId: null });
         // A native permission sheet may remain open indefinitely after logout.
         if (previousWork) await new Promise<void>(resolve => {
           const timer = setTimeout(resolve, 1000);

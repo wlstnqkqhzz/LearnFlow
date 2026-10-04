@@ -26,6 +26,7 @@ public class MobilePushSubscription {
     @Column(nullable = false) private boolean enabled;
     @Column(name = "created_at", nullable = false, updatable = false) private Instant createdAt;
     @Column(name = "updated_at", nullable = false) private Instant updatedAt;
+    @Column(name = "binding_generation", nullable = false) private long bindingGeneration;
     @Version private long version;
 
     static MobilePushSubscription create(Member member, String installationId, String secretHash, Platform platform, Instant now) {
@@ -34,8 +35,8 @@ public class MobilePushSubscription {
         s.platform = platform; s.createdAt = now; s.updatedAt = now;
         return s;
     }
-    void bind(Member next, Instant now) {
-        if (!member.getId().equals(next.getId())) { member = next; enabled = false; updatedAt = now; }
+    void bind(Member next, long generation, Instant now) {
+        member = next; bindingGeneration = generation; enabled = false; updatedAt = now;
     }
     void register(String token, String hash, Platform platform, Instant now) {
         if (!enabled || !token.equals(expoPushToken) || this.platform != platform) {

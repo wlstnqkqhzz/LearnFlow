@@ -27,13 +27,16 @@ public class MobilePushSubscriptionService {
         eligible(member);
         var found = subscriptions.findByInstallationId(request.installationId());
         if (found.isEmpty()) {
-            checkVersion(0, request.version());
-            return MobilePushDtos.Response.from(subscriptions.saveAndFlush(MobilePushSubscription.create(
-                    member, request.installationId(), hash(secret), request.platform(), clock.instant())));
+            var created = MobilePushSubscription.create(member, request.installationId(), hash(secret), request.platform(), clock.instant());
+            created.bind(member, request.bindingGeneration(), clock.instant());
+            return MobilePushDtos.Response.from(subscriptions.saveAndFlush(created));
         }
         var s = found.get();
-        proof(s, secret); checkVersion(s.getVersion(), request.version());
-        s.bind(member, clock.instant());
+        proof(s, secret);
+        long generation = request.bindingGeneration();
+        if (generation < s.getBindingGeneration() || (generation == s.getBindingGeneration() && !s.getMember().getId().equals(memberId)))
+            throw new BusinessException(ErrorCode.MOBILE_PUSH_CONFLICT);
+        if (generation > s.getBindingGeneration()) s.bind(member, generation, clock.instant());
         return MobilePushDtos.Response.from(subscriptions.saveAndFlush(s));
     }
     @Transactional

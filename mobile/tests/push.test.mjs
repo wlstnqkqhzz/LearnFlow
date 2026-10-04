@@ -13,17 +13,28 @@ const tick = () => new Promise(r => setImmediate(r));
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 const failure = status => new AxiosError('failed', undefined, undefined, undefined, { status });
 const id = '11111111-1111-4111-a111-111111111111', secret = 's'.repeat(64);
+test('lost binding response then logout and B login recovers automatically', async () => {
+  const f = fixture(); f.actor(3); await f.store.setMember(3); await f.store.on();
+  const bind = f.api.bind;
+  f.actor(1); f.api.bind = async (...args) => { await bind(...args); throw Error('response lost'); };
+  await f.store.setMember(1); assert.equal(f.store.snapshot().phase, 'binding-error');
+  await f.store.logout({ ...f.api, get: async () => { throw failure(404); } });
+  f.actor(2); f.api.get = async () => { throw failure(404); }; f.api.bind = bind;
+  await f.store.setMember(2);
+  assert.equal(f.store.snapshot().phase, 'off');
+  assert.equal(f.store.snapshot().enabled, false);
+});
 function fixture() {
   let raw = null, owner = null, current = null, token = '', permission = 'undetermined';
   const calls = [];
   const identity = createInstallationStore({ read: async () => raw, write: async value => { raw = value; } }, () => ({ id, secret }));
   const api = {
-    get: async () => { calls.push('get'); if (!current) throw failure(404); return { ...current }; },
-    bind: async (_, platform, version) => {
+    get: async () => { calls.push('get'); if (!current || owner !== actor) throw failure(404); return { ...current }; },
+    bind: async (_, platform, bindingGeneration) => {
       calls.push('bind');
-      if (current && current.version !== version) throw failure(409);
-      if (!current) current = { subscriptionId: 1, version: 0, platform, enabled: false, updatedAt: '2026-10-05T00:00:00Z' };
-      else if (owner !== actor) current = { ...current, enabled: false, version: current.version + 1 };
+      if (current && (bindingGeneration < current.bindingGeneration || (bindingGeneration === current.bindingGeneration && owner !== actor))) throw failure(409);
+      if (!current) current = { subscriptionId: 1, version: 0, bindingGeneration, platform, enabled: false, updatedAt: '2026-10-05T00:00:00Z' };
+      else if (bindingGeneration > current.bindingGeneration) current = { ...current, bindingGeneration, enabled: false, version: current.version + 1 };
       owner = actor; return { ...current };
     },
     register: async (_, binding, nextToken) => { calls.push('register'); assert.equal(binding.version, current.version); token = nextToken; current = { ...current, enabled: true, version: current.version + 1 }; return { ...current }; },
@@ -44,6 +55,59 @@ test('installation generates once, persists separate credentials and reuses them
 test('corrupt identity is not silently replaced with a different installation', async () => {
   const identity = createInstallationStore({ read: async () => '{}', write: async () => {} }, () => ({ id, secret }));
   await assert.rejects(identity.get());
+});
+
+test('binding intent is durable before sending and lost responses reuse generation across restart', async () => {
+  const f = fixture(), bind = f.api.bind, generations = [];
+  f.api.bind = async (identity, platform, generation) => {
+    const saved = JSON.parse(f.raw());
+    assert.equal(saved.bindingGeneration, generation); assert.equal(saved.bindingMemberId, 1);
+    generations.push(generation); await bind(identity, platform, generation); throw Error('response lost');
+  };
+  await f.store.setMember(1); await f.store.retry();
+  assert.deepEqual(generations, [1, 1]);
+  f.api.bind = bind;
+  const identity = createInstallationStore({ read: async () => f.raw(), write: async () => {} }, () => { throw Error('must reuse'); });
+  const restored = createPushStore(f.api, identity, f.native);
+  await restored.setMember(1); assert.equal(restored.snapshot().phase, 'off');
+  assert.equal((await identity.get()).bindingGeneration, 1);
+  await restored.on(); assert.equal(restored.snapshot().enabled, true);
+});
+
+test('B lost response recovers on foreground with same generation and rejects late A', async () => {
+  const f = fixture(); await f.store.setMember(1); await f.store.on();
+  const a = await f.identity.get(), bind = f.api.bind;
+  await f.store.logout(f.api); f.actor(2);
+  f.api.bind = async (...args) => { await bind(...args); throw Error('lost B response'); };
+  await f.store.setMember(2); const b = await f.identity.get();
+  assert.equal(b.bindingGeneration, a.bindingGeneration + 1);
+  f.api.bind = bind; await f.store.reconcile();
+  assert.equal(f.store.snapshot().phase, 'off'); assert.equal(f.current().enabled, false);
+  assert.equal((await f.identity.get()).bindingGeneration, b.bindingGeneration);
+  f.actor(1);
+  await assert.rejects(bind(a, 'ANDROID', a.bindingGeneration), e => e.response.status === 409);
+  await assert.rejects(bind(a, 'ANDROID', b.bindingGeneration), e => e.response.status === 409);
+  f.actor(2); await f.store.on(); assert.equal(f.current().enabled, true);
+});
+
+test('failed durable generation write prevents network binding and does not increment on retry', async () => {
+  let raw = null, fail = true, calls = 0;
+  const identity = createInstallationStore({ read: async () => raw, write: async value => {
+    if (JSON.parse(value).bindingGeneration > 0 && fail) throw Error('storage unavailable'); raw = value;
+  } }, () => ({ id, secret }));
+  const f = fixture(); f.api.bind = async () => { calls++; throw Error('network'); };
+  const store = createPushStore(f.api, identity, f.native);
+  await store.setMember(1); assert.equal(calls, 0); assert.equal((await identity.get()).bindingGeneration, 0);
+  fail = false; await store.retry(); await store.retry();
+  assert.equal(calls, 2); assert.equal((await identity.get()).bindingGeneration, 1);
+});
+
+test('legacy identity keeps credentials and starts generation one; concurrent prepare increments once', async () => {
+  let raw = JSON.stringify({ installationId: id, installationSecret: secret, binding: null, memberId: 1, optedInMember: 1 });
+  const identity = createInstallationStore({ read: async () => raw, write: async value => { raw = value; } }, () => { throw Error('must reuse'); });
+  const [a, b] = await Promise.all([identity.beginBinding(1, () => true), identity.beginBinding(1, () => true)]);
+  assert.equal(a.bindingGeneration, 1); assert.deepEqual(a, b); assert.equal(a.installationSecret, secret);
+  assert.equal(a.optedInMember, null);
 });
 test('login binds without prompting permission; explicit ON preserves channel order', async () => {
   const f = fixture(); await f.store.setMember(1); assert.equal(f.store.snapshot().enabled, false); assert.ok(!f.calls.includes('request'));
@@ -122,7 +186,7 @@ test('API uses exact header, binding/version, PUT and DELETE contracts', async (
   const client = create(), requests = []; client.defaults.adapter = async config => { requests.push(config); return { config, data: { subscriptionId: 5, version: 7, enabled: true }, status: 200, statusText: 'OK', headers: {} }; };
   const api = createPushApi(client), identity = { installationId: id, installationSecret: secret }, binding = { subscriptionId: 5, version: 7, enabled: true };
   await api.bind(identity, 'IOS', 6); await api.register(identity, binding, 'ExpoPushToken[test]', 'IOS'); await api.disable(identity, binding);
-  assert.equal(requests[0].url, '/mobile/push/subscriptions/binding'); assert.equal(requests[0].headers.get('X-Installation-Secret'), secret); assert.deepEqual(JSON.parse(requests[0].data), { installationId: id, platform: 'IOS', version: 6 });
+  assert.equal(requests[0].url, '/mobile/push/subscriptions/binding'); assert.equal(requests[0].headers.get('X-Installation-Secret'), secret); assert.deepEqual(JSON.parse(requests[0].data), { installationId: id, platform: 'IOS', bindingGeneration: 6 });
   assert.equal(requests[1].method, 'put'); assert.equal(JSON.parse(requests[1].data).version, 7); assert.equal(requests[2].method, 'delete'); assert.deepEqual(requests[2].params, { version: 7 }); assert.ok(!requests.some(r => r.url.includes(secret)));
 });
 

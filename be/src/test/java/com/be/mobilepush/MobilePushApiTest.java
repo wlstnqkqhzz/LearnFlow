@@ -42,7 +42,7 @@ class MobilePushApiTest {
     @Test void bindingUsesPrincipalAndSafeResponse() throws Exception {
         when(service.bind(eq(2L), eq(SECRET), any())).thenReturn(new MobilePushDtos.Response(1L, MobilePushSubscription.Platform.ANDROID, false, 0, Instant.EPOCH));
         String body = mvc.perform(put("/api/mobile/push/subscriptions/binding").with(as(Role.EMPLOYEE)).header("X-Installation-Secret", SECRET)
-                .contentType("application/json").content("{\"installationId\":\"11111111-1111-1111-1111-111111111111\",\"platform\":\"ANDROID\",\"version\":0,\"memberId\":999}"))
+                .contentType("application/json").content("{\"installationId\":\"11111111-1111-1111-1111-111111111111\",\"platform\":\"ANDROID\",\"bindingGeneration\":1,\"memberId\":999}"))
                 .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store")).andExpect(jsonPath("$.subscriptionId").value(1)).andReturn().getResponse().getContentAsString();
         verify(service).bind(eq(2L), eq(SECRET), any()); assertThat(body).doesNotContain(SECRET, "token", "secret", "memberId", "installationId");
     }
@@ -78,5 +78,19 @@ class MobilePushApiTest {
                 .content("{\"expoPushToken\":\"SECRET-INVALID\",\"platform\":\"IOS\",\"version\":0}"))
                 .andExpect(status().isBadRequest()).andReturn().getResponse().getContentAsString();
         assertThat(body).doesNotContain("SECRET-INVALID", SECRET); verifyNoInteractions(service);
+    }
+    @Test void bindingRequiresPositiveSafeGenerationAndMapsConflicts() throws Exception {
+        for (String generation : new String[] {"null", "0", "-1", "9007199254740992"}) {
+            mvc.perform(put("/api/mobile/push/subscriptions/binding").with(as(Role.EMPLOYEE))
+                    .header("X-Installation-Secret", SECRET).contentType("application/json")
+                    .content("{\"installationId\":\"11111111-1111-1111-1111-111111111111\",\"platform\":\"ANDROID\",\"bindingGeneration\":" + generation + "}"))
+                    .andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(service);
+        when(service.bind(any(), any(), any())).thenThrow(new BusinessException(ErrorCode.MOBILE_PUSH_CONFLICT));
+        mvc.perform(put("/api/mobile/push/subscriptions/binding").with(as(Role.EMPLOYEE))
+                .header("X-Installation-Secret", SECRET).contentType("application/json")
+                .content("{\"installationId\":\"11111111-1111-1111-1111-111111111111\",\"platform\":\"ANDROID\",\"bindingGeneration\":1}"))
+                .andExpect(status().isConflict());
     }
 }

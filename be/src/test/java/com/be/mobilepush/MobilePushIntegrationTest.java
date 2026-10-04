@@ -70,7 +70,7 @@ class MobilePushIntegrationTest {
             member_id BIGINT NOT NULL REFERENCES members(id), installation_id VARCHAR(36) NOT NULL UNIQUE,
             installation_secret_hash VARCHAR(64) NOT NULL, expo_push_token VARCHAR(512), token_hash VARCHAR(64) UNIQUE,
             platform VARCHAR(10) NOT NULL, enabled BOOLEAN NOT NULL, created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-            updated_at TIMESTAMP WITH TIME ZONE NOT NULL, version BIGINT NOT NULL DEFAULT 0)
+            updated_at TIMESTAMP WITH TIME ZONE NOT NULL, binding_generation BIGINT NOT NULL DEFAULT 0, version BIGINT NOT NULL DEFAULT 0)
             """);
         when(expo.send(any(), any())).thenReturn(new ExpoPushTransport.Result(200, "ticket", null, null));
         when(web.send(any(), any())).thenReturn(new PushTransport.Result(201, null));
@@ -80,7 +80,7 @@ class MobilePushIntegrationTest {
         jdbc.execute("DROP TABLE push_subscriptions"); jdbc.execute("DROP TABLE notifications"); jdbc.execute("DROP TABLE enrollments");
         jdbc.execute("DROP TABLE members"); jdbc.execute("DROP TABLE courses"); jdbc.execute("DROP TABLE assignment_rules");
     }
-    MobilePushDtos.Response bind() { return service.bind(2L, SECRET, binding(INSTALL, 0)); }
+    MobilePushDtos.Response bind() { return service.bind(2L, SECRET, binding(INSTALL, 1)); }
     MobilePushDtos.Response active() { var s = bind(); return service.register(2L, s.subscriptionId(), SECRET, token("device", s.version())); }
     void business(boolean rollback) {
         new TransactionTemplate(transactions).executeWithoutResult(tx -> {
@@ -93,16 +93,16 @@ class MobilePushIntegrationTest {
     @Test void bindingIsIdempotentAndAllowsMultipleInstallations() {
         var first = bind(); var repeated = bind();
         assertThat(repeated).isEqualTo(first); assertThat(first.enabled()).isFalse();
-        assertThat(service.bind(2L, SECRET, binding("22222222-2222-2222-2222-222222222222", 0)).subscriptionId()).isNotEqualTo(first.subscriptionId());
+        assertThat(service.bind(2L, SECRET, binding("22222222-2222-2222-2222-222222222222", 1)).subscriptionId()).isNotEqualTo(first.subscriptionId());
         assertThat(repository.count()).isEqualTo(2);
     }
     @Test void transferDisablesAndRejectsWrongSecretOldVersionsAndPreviousOwner() {
         var s = active();
-        assertThatThrownBy(() -> service.bind(3L, "x".repeat(43), binding(INSTALL, s.version()))).isInstanceOf(com.be.global.exception.BusinessException.class);
-        var moved = service.bind(3L, SECRET, binding(INSTALL, s.version()));
+        assertThatThrownBy(() -> service.bind(3L, "x".repeat(43), binding(INSTALL, 2))).isInstanceOf(com.be.global.exception.BusinessException.class);
+        var moved = service.bind(3L, SECRET, binding(INSTALL, 2));
         assertThat(moved.enabled()).isFalse(); assertThat(moved.version()).isGreaterThan(s.version());
-        assertThat(service.bind(3L, SECRET, binding(INSTALL, moved.version()))).isEqualTo(moved);
-        assertThatThrownBy(() -> service.bind(2L, SECRET, binding(INSTALL, s.version()))).isInstanceOf(com.be.global.exception.BusinessException.class);
+        assertThat(service.bind(3L, SECRET, binding(INSTALL, 2))).isEqualTo(moved);
+        assertThatThrownBy(() -> service.bind(2L, SECRET, binding(INSTALL, 1))).isInstanceOf(com.be.global.exception.BusinessException.class);
         assertThatThrownBy(() -> service.get(2L, s.subscriptionId())).isInstanceOf(com.be.global.exception.BusinessException.class);
         assertThatThrownBy(() -> service.disable(2L, s.subscriptionId(), SECRET, s.version())).isInstanceOf(com.be.global.exception.BusinessException.class);
     }
@@ -111,13 +111,59 @@ class MobilePushIntegrationTest {
         assertThat(service.register(2L, s.subscriptionId(), SECRET, token("device", s.version()))).isEqualTo(s);
         var updated = service.register(2L, s.subscriptionId(), SECRET, token("new", s.version()));
         assertThat(updated.version()).isGreaterThan(s.version());
-        var other = service.bind(3L, SECRET, binding("22222222-2222-2222-2222-222222222222", 0));
+        var other = service.bind(3L, SECRET, binding("22222222-2222-2222-2222-222222222222", 1));
         assertThatThrownBy(() -> service.register(3L, other.subscriptionId(), SECRET, token("new", other.version()))).isInstanceOf(com.be.global.exception.BusinessException.class);
         assertThatThrownBy(() -> service.register(2L, s.subscriptionId(), SECRET, token("stale", s.version()))).isInstanceOf(com.be.global.exception.BusinessException.class);
         service.disable(2L, s.subscriptionId(), SECRET, updated.version());
         var disabled = service.get(2L, s.subscriptionId());
         service.disable(2L, s.subscriptionId(), SECRET, disabled.version());
         assertThat(service.get(2L, s.subscriptionId())).isEqualTo(disabled);
+    }
+    @Test void lostResponsesRecoverByGenerationWithoutKnowingServerVersion() {
+        var original = active();
+        // The caller discards the committed response, retaining its old version.
+        service.bind(2L, SECRET, binding(INSTALL, 2));
+        var recoveredA = service.bind(2L, SECRET, binding(INSTALL, 2));
+        assertThat(recoveredA.enabled()).isFalse();
+        assertThat(recoveredA.version()).isGreaterThan(original.version());
+        service.bind(3L, SECRET, binding(INSTALL, 3)); // B also loses the response.
+        var recoveredB = service.bind(3L, SECRET, binding(INSTALL, 3));
+        assertThat(service.bind(3L, SECRET, binding(INSTALL, 3))).isEqualTo(recoveredB);
+        assertThat(recoveredB.enabled()).isFalse();
+        assertThatThrownBy(() -> service.bind(2L, SECRET, binding(INSTALL, 2)))
+                .isInstanceOf(com.be.global.exception.BusinessException.class);
+        assertThatThrownBy(() -> service.bind(2L, SECRET, binding(INSTALL, 3)))
+                .isInstanceOf(com.be.global.exception.BusinessException.class);
+        assertThatThrownBy(() -> service.bind(3L, "x".repeat(43), binding(INSTALL, 3)))
+                .isInstanceOf(com.be.global.exception.BusinessException.class);
+        var on = service.register(3L, recoveredB.subscriptionId(), SECRET, token("recovered", recoveredB.version()));
+        assertThat(on.enabled()).isTrue();
+        assertThat(service.bind(3L, SECRET, binding(INSTALL, 3))).isEqualTo(on);
+        assertThatThrownBy(() -> service.register(2L, original.subscriptionId(), SECRET, token("late", original.version())))
+                .isInstanceOf(com.be.global.exception.BusinessException.class);
+        assertThatThrownBy(() -> service.disable(2L, original.subscriptionId(), SECRET, original.version()))
+                .isInstanceOf(com.be.global.exception.BusinessException.class);
+        store.disable(original.subscriptionId(), original.version());
+        assertThat(service.get(3L, original.subscriptionId()).enabled()).isTrue();
+    }
+    @Test void concurrentGenerationsCannotRevertNewOwner() throws Exception {
+        active();
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var start = new java.util.concurrent.CountDownLatch(1);
+            var older = executor.submit(() -> {
+                start.await();
+                try { service.bind(2L, SECRET, binding(INSTALL, 2)); }
+                catch (com.be.global.exception.BusinessException expected) {
+                    assertThat(expected.getErrorCode()).isEqualTo(com.be.global.exception.ErrorCode.MOBILE_PUSH_CONFLICT);
+                }
+                return true;
+            });
+            var newer = executor.submit(() -> { start.await(); return service.bind(3L, SECRET, binding(INSTALL, 3)); });
+            start.countDown(); older.get(10, java.util.concurrent.TimeUnit.SECONDS);
+            var result = newer.get(10, java.util.concurrent.TimeUnit.SECONDS);
+            assertThat(service.get(3L, result.subscriptionId()).enabled()).isFalse();
+            assertThat(jdbc.queryForObject("SELECT binding_generation FROM mobile_push_subscriptions", Long.class)).isEqualTo(3);
+        }
     }
     @Test void committedEventDispatchesBothOutsideTransaction() throws Exception {
         active(); webSubscription();
@@ -144,7 +190,7 @@ class MobilePushIntegrationTest {
         var s = active(); business(false);
         Long n = jdbc.queryForObject("SELECT id FROM notifications", Long.class);
         var ref = store.targets(n).getFirst();
-        var moved = service.bind(3L, SECRET, binding(INSTALL, s.version()));
+        var moved = service.bind(3L, SECRET, binding(INSTALL, 2));
         var current = service.register(3L, s.subscriptionId(), SECRET, token("replacement", moved.version()));
         assertThat(store.load(n, ref)).isEmpty(); store.disable(ref.id(), ref.version());
         assertThat(service.get(3L, s.subscriptionId()).enabled()).isTrue();
@@ -174,7 +220,7 @@ class MobilePushIntegrationTest {
     }
     @Test void receiptUsesVersionGuardAcrossAccountTransfer() throws Exception {
         var s = active(); business(false); tasks().run();
-        var moved = service.bind(3L, SECRET, binding(INSTALL, s.version()));
+        var moved = service.bind(3L, SECRET, binding(INSTALL, 2));
         service.register(3L, s.subscriptionId(), SECRET, token("new", moved.version()));
         when(expo.receipts(any())).thenReturn(new ExpoPushTransport.Receipts(200, Map.of("ticket", "DeviceNotRegistered"), null));
         clock.advance(901); poller.poll();

@@ -8,8 +8,8 @@ export function createPushApi(client: AxiosInstance, cleanupAccess?: string) {
   });
   const base = '/mobile/push/subscriptions';
   return {
-    async bind(identity: Installation, platform: Subscription['platform'], version: number, signal?: AbortSignal) {
-      return (await client.put<Subscription>(`${base}/binding`, { installationId: identity.installationId, platform, version }, config(identity, signal))).data;
+    async bind(identity: Installation, platform: Subscription['platform'], bindingGeneration: number, signal?: AbortSignal) {
+      return (await client.put<Subscription>(`${base}/binding`, { installationId: identity.installationId, platform, bindingGeneration }, config(identity, signal))).data;
     },
     async get(identity: Installation, id: number, signal?: AbortSignal) {
       return (await client.get<Subscription>(`${base}/${id}`, config(identity, signal))).data;
