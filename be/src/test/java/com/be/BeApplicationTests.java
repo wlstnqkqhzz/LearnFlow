@@ -40,7 +40,8 @@ class BeApplicationTests {
     @Test
     void contextLoads() throws Exception {
         assertThat(entityManagerFactory.isOpen()).isTrue();
-        assertThat(entityManagerFactory.getMetamodel().getEntities()).hasSize(19);
+        assertThat(entityManagerFactory.getMetamodel().getEntities()).hasSize(20);
+        assertThat(entityManagerFactory.getMetamodel().entity(com.be.mobilepush.MobilePushSubscription.class)).isNotNull();
         assertThat(entityManagerFactory.getMetamodel().entity(com.be.push.PushSubscription.class)).isNotNull();
         assertThat(entityManagerFactory.getMetamodel().entity(com.be.certificate.entity.Certificate.class)).isNotNull();
         // 래퍼/health 구성 조회는 허용하되 실제 저장소 연결을 요청하지 않았는지 확인

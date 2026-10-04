@@ -38,6 +38,7 @@ public class SecurityConfig {
                 .exceptionHandling(errors -> errors.authenticationEntryPoint(entryPoint)
                         .accessDeniedHandler(deniedHandler))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/mobile/push/subscriptions", "/api/mobile/push/subscriptions/**").hasRole("EMPLOYEE")
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/admin/dashboard").hasRole("ADMIN")

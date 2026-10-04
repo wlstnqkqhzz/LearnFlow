@@ -24,6 +24,11 @@ push:
   private-key: ${VAPID_PRIVATE_KEY:}
   subject: ${VAPID_SUBJECT:}
 
+# Independent of Web Push; optional Expo enhanced-security token is server-only.
+mobile-push:
+  enabled: ${MOBILE_PUSH_ENABLED:false}
+  access-token: ${EXPO_PUSH_ACCESS_TOKEN:}
+
 # HTTP wire/header and SQL bind logging can disclose subscription credentials.
 logging:
   level:

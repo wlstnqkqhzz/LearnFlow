@@ -2,6 +2,10 @@ package com.be.global.exception;
 
 // Service와 Entity에서 공통으로 사용하는 업무 오류
 public enum ErrorCode {
+    MOBILE_PUSH_NOT_FOUND("모바일 Push 구독을 찾을 수 없습니다."),
+    MOBILE_PUSH_CONFLICT("구독이 변경되었거나 이미 사용 중입니다. 상태를 확인해주세요."),
+    MOBILE_PUSH_FORBIDDEN("모바일 Push 구독에 접근할 수 없습니다."),
+    INVALID_MOBILE_PUSH("모바일 Push 요청 형식이 올바르지 않습니다."),
     INVALID_STATISTICS_RANGE("조회 시작일과 종료일, 최대 366일 범위 및 필터 ID를 확인해주세요. 미래 날짜는 조회할 수 없습니다."),
     PUSH_SUBSCRIPTION_NOT_FOUND("Push 구독을 찾을 수 없습니다."),
     PUSH_SUBSCRIPTION_CONFLICT("구독을 등록할 수 없습니다. 브라우저에서 구독을 새로 생성해주세요."),

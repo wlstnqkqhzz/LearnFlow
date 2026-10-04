@@ -29,6 +29,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleBusiness(BusinessException exception) {
         ErrorCode code = exception.getErrorCode();
         HttpStatus status = switch (code) {
+            case MOBILE_PUSH_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case MOBILE_PUSH_CONFLICT -> HttpStatus.CONFLICT;
+            case MOBILE_PUSH_FORBIDDEN -> HttpStatus.FORBIDDEN;
+            case INVALID_MOBILE_PUSH -> HttpStatus.BAD_REQUEST;
             case INVALID_STATISTICS_RANGE -> HttpStatus.BAD_REQUEST;
             case PUSH_SUBSCRIPTION_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case PUSH_SUBSCRIPTION_CONFLICT, PUSH_SUBSCRIPTION_LIMIT -> HttpStatus.CONFLICT;
