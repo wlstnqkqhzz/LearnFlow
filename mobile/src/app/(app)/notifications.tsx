@@ -7,6 +7,7 @@ import { Button, Screen } from '@/learning/ui';
 import { textValue } from '@/learning/api';
 import { localTime, notificationLabel } from '@/notifications/api';
 import { useNotifications } from '@/notifications/NotificationProvider';
+import { PushSettings } from '@/push/PushSettings';
 export default function Notifications() {
   const state = useNotifications(), { store } = state; const router = useRouter(); const lock = useRef(false); const focused = useRef(false); const focusEpoch = useRef(0);
   useFocusEffect(useCallback(() => { focused.current = true; focusEpoch.current++; void store.focus(true); return () => { focused.current = false; focusEpoch.current++; void store.focus(false); }; }, [store]));
@@ -17,6 +18,7 @@ export default function Notifications() {
   }
   return <SafeAreaView style={{ flex: 1 }} edges={['top']}><Screen loading={state.loading || state.working} error={state.error || state.countError} reload={() => void store.refresh()}>
     <Text style={s.title}>알림</Text><Text style={s.subtitle}>미읽음 {state.count === null ? '—' : `${state.count}개`}</Text>
+    <PushSettings />
     <Button title={state.working ? '처리 중…' : '전체 읽음'} disabled={state.working || state.loading || state.count === 0 || state.count === null} onPress={() => void store.readAll()} />
     {!!state.actionError && <Text accessibilityRole="alert" style={s.error}>{state.actionError}</Text>}
     {!state.loading && state.data?.content.length === 0 && <Text style={s.subtitle}>받은 알림이 없습니다.</Text>}

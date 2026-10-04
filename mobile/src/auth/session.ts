@@ -49,10 +49,14 @@ export function createAuthSession(storage: TokenStorage, baseURL: string) {
   let boot: Promise<void> | null = null;
   let signingIn = false;
   const listeners = new Set<() => void>();
+  const invalidationListeners = new Set<(access: string) => void>();
   const publish = (next: AuthState) => { state = next; listeners.forEach(fn => fn()); };
   const serialize = <T,>(action: () => Promise<T>): Promise<T> => { const result = writes.then(action); writes = result.catch(() => {}); return result; };
   const cancelled = () => new CanceledError('인증 상태가 변경되었습니다.');
   async function clear(message = '') {
+    if (tokens?.accessToken && state.status === 'authenticated') {
+      for (const fn of invalidationListeners) { try { fn(tokens.accessToken); } catch { /* Cleanup must never prevent auth invalidation. */ } }
+    }
     const ticket = ++epoch; tokens = null; revision++;
     publish({ status: 'anonymous', user: null, message });
     try { await serialize(async () => { try { await storage.remove(); } catch { await storage.write(''); } }); }
@@ -113,6 +117,7 @@ export function createAuthSession(storage: TokenStorage, baseURL: string) {
     client, publicClient,
     getSnapshot: () => state,
     subscribe: (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn); }; },
+    onInvalidate: (fn: (access: string) => void) => { invalidationListeners.add(fn); return () => { invalidationListeners.delete(fn); }; },
     restore() {
       if (boot) return boot;
       const ticket = epoch;

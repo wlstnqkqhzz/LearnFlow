@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { create, AxiosError } from 'axios';
-import { createExamApi, selectChoice } from '../src/exam/api.ts';
+import { createAttemptStart, createExamApi, selectChoice } from '../src/exam/api.ts';
 import { createAnswerSession } from '../src/exam/session.ts';
 import { createAuthSession } from '../src/auth/session.ts';
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
@@ -10,6 +10,30 @@ const attempt = { attemptId: 5, attemptNumber: 1, score: null, passed: null, sta
 const eligibility = { canStart: false, canContinue: true, passed: false, attemptCount: 1, maxAttempts: 3, remainingAttempts: 2, openAttemptId: 5, blockedReason: null };
 const paper = { attemptId: 5, title: '시험', questions: [{ questionId: 1, questionType: 'SINGLE_CHOICE', questionText: '문제', score: 10, sortOrder: 1, choices: [{ choiceId: 10, choiceText: 'A', sortOrder: 1 }, { choiceId: 11, choiceText: 'B', sortOrder: 2 }], selectedChoiceIds: [10] }] };
 const passed = { ...attempt, submittedAt: '2026-10-03T00:01:00', score: 100, passed: true };
+test('leaving detail aborts start and ignores a late successful attempt response', async () => {
+  const gate = deferred(), moves = []; let signal;
+  const start = createAttemptStart(async (_, requestSignal) => { signal = requestSignal; await gate.promise; return attempt; });
+  const pending = start.run(7, result => moves.push(result.attemptId));
+  start.cancel(); assert.equal(signal.aborted, true); gate.resolve(); await pending; assert.deepEqual(moves, []);
+});
+test('cancelled old start cannot navigate after returning and starting again', async () => {
+  const gate = deferred(), moves = []; let calls = 0;
+  const start = createAttemptStart(async () => { if (++calls === 1) { await gate.promise; return attempt; } return { ...attempt, attemptId: 6 }; });
+  const old = start.run(7, result => moves.push(result.attemptId)); start.cancel();
+  await start.run(7, result => moves.push(result.attemptId)); gate.resolve(); await old; assert.deepEqual(moves, [6]);
+});
+test('start suppresses duplicate requests and keeps real errors retryable', async () => {
+  const gate = deferred(); let calls = 0;
+  const start = createAttemptStart(async () => { calls++; await gate.promise; throw Error('offline'); });
+  const first = start.run(7, () => {}), duplicate = start.run(7, () => {});
+  assert.equal(first, duplicate); gate.resolve(); await assert.rejects(first, /offline/); assert.equal(calls, 1);
+  await assert.rejects(start.run(7, () => {}), /offline/); assert.equal(calls, 2);
+});
+test('attempt start forwards cancellation to the shared Axios client', async () => {
+  const client = create(), controller = new AbortController();
+  client.defaults.adapter = async config => { assert.equal(config.signal, controller.signal); return ok(config, attempt); };
+  await createExamApi(client).start(7, controller.signal);
+});
 for (const type of ['SINGLE_CHOICE', 'TRUE_FALSE']) test(`${type} selects exactly one`, () => { assert.deepEqual(selectChoice(type, [10], 11), [11]); assert.deepEqual(selectChoice(type, [10], 10), [10]); });
 test('MULTIPLE_CHOICE toggles and permits clearing all choices', () => { assert.deepEqual(selectChoice('MULTIPLE_CHOICE', [10], 11), [10, 11]); assert.deepEqual(selectChoice('MULTIPLE_CHOICE', [10], 10), []); });
 test('new and reused attempts use same POST contract', async () => {

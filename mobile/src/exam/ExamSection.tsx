@@ -1,22 +1,25 @@
 import { useCallback, useRef, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 import type { LearningDetail } from '@/learning/api';
 import { learningError } from '@/learning/api';
 import { useLearning } from '@/learning/useLearning';
 import { Button } from '@/learning/ui';
 import { employeeStyles as s } from '@/components/employee-styles';
-import { blockedLabels } from './api';
+import { blockedLabels, createAttemptStart } from './api';
 import { examApi } from './runtime';
 export function ExamSection({ detail }: { detail: LearningDetail }) {
   return detail.exam ? <AvailableExam detail={detail} /> : <View style={s.card}><Text style={s.heading}>시험</Text><Text style={s.subtitle}>등록된 시험이 없습니다.</Text></View>;
 }
 function AvailableExam({ detail }: { detail: LearningDetail }) {
-  const query = useLearning(useCallback((signal: AbortSignal) => examApi.summary(detail.enrollmentId, signal), [detail.enrollmentId]));
+  // A refreshed enrollment may have completed while the employee stayed on this screen.
+  const query = useLearning(useCallback((signal: AbortSignal) => examApi.summary(detail.enrollmentId, signal), [detail]));
   const router = useRouter(); const lock = useRef(false); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+  const [starter] = useState(() => createAttemptStart(examApi.start));
+  useFocusEffect(useCallback(() => () => starter.cancel(), [starter]));
   async function start() {
     if (lock.current) return; lock.current = true; setBusy(true); setError('');
-    try { const attempt = await examApi.start(detail.enrollmentId); router.push({ pathname: '/enrollment/[id]/exam/[attemptId]', params: { id: detail.enrollmentId, attemptId: attempt.attemptId } }); }
+    try { await starter.run(detail.enrollmentId, attempt => router.push({ pathname: '/enrollment/[id]/exam/[attemptId]', params: { id: detail.enrollmentId, attemptId: attempt.attemptId } })); }
     catch (cause) { setError(learningError(cause)); await query.reload(); }
     finally { lock.current = false; setBusy(false); }
   }

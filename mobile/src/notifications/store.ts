@@ -1,7 +1,8 @@
 import type { NotificationPage, createNotificationApi } from './api';
-type State = { data: NotificationPage | null; count: number | null; page: number; loading: boolean; countLoading: boolean; error: string; countError: string; working: boolean; actionError: string };
+import { resolveNotification, unavailable } from './resolve.ts';
+type State = { data: NotificationPage | null; count: number | null; page: number; loading: boolean; countLoading: boolean; error: string; countError: string; working: boolean; actionError: string; actionRetryable: boolean };
 export function createNotificationStore(api: ReturnType<typeof createNotificationApi>) {
-  const initial = (): State => ({ data: null, count: null, page: 0, loading: false, countLoading: false, error: '', countError: '', working: false, actionError: '' });
+  const initial = (): State => ({ data: null, count: null, page: 0, loading: false, countLoading: false, error: '', countError: '', working: false, actionError: '', actionRetryable: false });
   let state = initial(), active = false, stopped = false, generation = 0;
   let request: { controller: AbortController; list: boolean; promise: Promise<void> } | null = null;
   let operation: AbortController | null = null;
@@ -23,24 +24,21 @@ export function createNotificationStore(api: ReturnType<typeof createNotificatio
   async function act(id?: number): Promise<number | null> {
     if (state.working || stopped) return null;
     cancel(); const controller = new AbortController(); operation = controller;
-    publish({ working: true, loading: false, countLoading: false, actionError: '' });
+    publish({ working: true, loading: false, countLoading: false, actionError: '', actionRetryable: false });
     let destination: number | null = null;
     try {
       if (id === undefined) {
         await api.readAll(controller.signal);
         publish({ count: null });
       } else {
-        let notification = await api.get(id, controller.signal);
-        if (notification.readAt === null) notification = await api.read(id, controller.signal);
+        const result = await resolveNotification(api, id, controller.signal);
+        const { notification } = result;
         if (controller.signal.aborted) return null;
         publish({ data: state.data ? { ...state.data, content: state.data.content.map(item => item.notificationId === id ? notification : item) } : null, count: null });
-        const related = notification.relatedEnrollmentId;
-        if (related !== null && Number.isSafeInteger(related) && related > 0) {
-          try { await api.checkEnrollment(related, controller.signal); destination = related; }
-          catch { publish({ actionError: '관련 교육에 접근할 수 없습니다. 알림 내용은 여기에서 확인할 수 있습니다.' }); }
-        } else publish({ actionError: '연결된 교육이 없습니다. 알림 내용은 여기에서 확인할 수 있습니다.' });
+        destination = result.destination;
+        publish({ actionError: result.message, actionRetryable: result.retryable });
       }
-    } catch { if (!controller.signal.aborted) publish({ actionError: '알림을 처리하지 못했습니다. 새로고침 후 다시 시도해 주세요.' }); }
+    } catch (error) { if (!controller.signal.aborted) publish({ actionError: unavailable(error) ? '이 알림에 접근할 수 없습니다.' : '알림을 처리하지 못했습니다. 새로고침 후 다시 시도해 주세요.', actionRetryable: !unavailable(error) }); }
     finally {
       if (!controller.signal.aborted && !stopped) await refresh(active);
       if (operation === controller) { operation = null; publish({ working: false }); }
