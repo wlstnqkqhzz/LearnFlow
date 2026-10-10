@@ -155,7 +155,25 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>**/application-local.*</exclude>
+                    <exclude>**/application-*secret*.*</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
+            <!-- Also exclude stale local resources left by builds before this policy. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration><excludes>
+                    <exclude>**/application-local.*</exclude>
+                    <exclude>**/application-*secret*.*</exclude>
+                </excludes></configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

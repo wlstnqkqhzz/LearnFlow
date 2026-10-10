@@ -54,11 +54,29 @@ Thumbs.db
 # Docs
 # Keep the two canonical database scripts versioned; other generated docs stay ignored.
 /docs/*
-/docs/
-/docs/LearnFlow.sql
-/docs/local-seed.sql
+!/docs/LearnFlow.sql
+!/docs/local-seed.sql
 *.[mM][dD]
 
 # Personal UI preview (keep automated tests tracked)
 /fe/tests/admin-preview.html
 /fe/tests/admin-preview.tsx
+
+# External deployment secrets (sanitized examples are allowed)
+**/application-prod-secret.*
+**/application-production-secret.*
+**/config/application-prod.*
+**/config/application-production.*
+**/google-services.json
+**/GoogleService-Info.plist
+**/*service-account*.json
+**/*service_account*.json
+**/credentials.json
+*.keystore
+*.jks
+*.p12
+*.p8
+*.key
+*.pem
+*.mobileprovision
+!*.example

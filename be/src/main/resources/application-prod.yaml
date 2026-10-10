@@ -1,0 +1,46 @@
+spring:
+  datasource:
+    url: ${APP_DATASOURCE_URL}
+    username: ${APP_DATASOURCE_USERNAME}
+    password: ${APP_DATASOURCE_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      connection-timeout: 10000
+      validation-timeout: 3000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-init-sql: "SET time_zone = '+00:00'"
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  sql:
+    init:
+      mode: never
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      username: ${REDIS_USERNAME:}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3s
+      connect-timeout: 3s
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:false}
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: OFF
+    org.springframework.security: INFO
+    org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration: OFF

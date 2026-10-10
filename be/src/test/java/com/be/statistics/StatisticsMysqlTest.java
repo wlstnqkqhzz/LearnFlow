@@ -16,7 +16,7 @@ class StatisticsMysqlTest extends StatisticsIntegrationTest {
     private String ownedSchema;
     @Override protected DataSource createSource() {
         var yaml = new YamlPropertiesFactoryBean();
-        yaml.setResources(new FileSystemResource("src/main/resources/application-local.yaml"));
+        yaml.setResources(new FileSystemResource("config/application-local.yaml"));
         var properties = Objects.requireNonNull(yaml.getObject());
         String url = properties.getProperty("spring.datasource.url");
         String username = properties.getProperty("spring.datasource.username");

@@ -37,3 +37,14 @@ logging:
     org.jose4j: OFF
     org.hibernate.orm.jdbc.bind: OFF
     org.hibernate.orm.jdbc.extract: OFF
+
+# Only the aggregate health status is exposed, including outside prod.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
