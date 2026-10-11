@@ -80,3 +80,4 @@ Thumbs.db
 *.pem
 *.mobileprovision
 !*.example
+!/docs/deployment.md

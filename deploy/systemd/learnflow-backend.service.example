@@ -1,0 +1,32 @@
+[Unit]
+Description=LearnFlow Backend
+After=network-online.target mysql.service redis-server.service
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=learnflow
+Group=learnflow
+WorkingDirectory=/opt/learnflow/backend
+Environment=SPRING_PROFILES_ACTIVE=prod
+Environment=SERVER_ADDRESS=127.0.0.1
+EnvironmentFile=/etc/learnflow/learnflow.env
+ExecStart=/usr/bin/java -jar /opt/learnflow/backend/be-0.0.1-SNAPSHOT.jar
+Restart=on-failure
+RestartSec=10s
+KillSignal=SIGTERM
+TimeoutStopSec=90s
+SuccessExitStatus=143
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=learnflow-backend
+
+[Install]
+WantedBy=multi-user.target
