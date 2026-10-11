@@ -13,6 +13,14 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+learnflow:
+  bootstrap:
+    admin:
+      enabled: ${LEARNFLOW_BOOTSTRAP_ADMIN_ENABLED:false}
+      email: ${LEARNFLOW_BOOTSTRAP_ADMIN_EMAIL:}
+      password: ${LEARNFLOW_BOOTSTRAP_ADMIN_PASSWORD:}
+      name: ${LEARNFLOW_BOOTSTRAP_ADMIN_NAME:}
+
 jwt:
   secret: ${JWT_SECRET}
   access-token-ttl-seconds: ${JWT_ACCESS_TOKEN_TTL_SECONDS}

@@ -149,6 +149,19 @@ class JwtAuthenticationApiTest {
         verifyNoInteractions(members, departments, positions);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"/api/members", "/api/members/1/roles/ADMIN", "/api/bootstrap/admin"})
+    void bootstrapAddsNoPublicAdminCreationOrPrivilegeEscalation(String path) throws Exception {
+        mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+        member.addRole(Role.INSTRUCTOR);
+        when(repository.findWithRolesById(1L)).thenReturn(Optional.of(member));
+        mvc.perform(post(path).header("Authorization", "Bearer " + tokens.createAccessToken(MemberPrincipal.from(member)))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(members);
+    }
+
     @Test
     void adminCanManageWithBearerToken() throws Exception {
         member.addRole(Role.ADMIN);

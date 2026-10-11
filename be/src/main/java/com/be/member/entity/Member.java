@@ -129,6 +129,15 @@ public class Member extends BaseTimeEntity {
         return member;
     }
 
+    // Startup bootstrap 전용: 직원 자동 배정 대상이 아닌 ADMIN 계정.
+    public static Member createInitialAdmin(String employeeNumber, String email, String passwordHash,
+                                            String name, Department department, JobPosition jobPosition,
+                                            LocalDate hireDate) {
+        Member member = create(employeeNumber, email, passwordHash, name, department, jobPosition, hireDate);
+        member.roles = new HashSet<>(Set.of(Role.ADMIN));
+        return member;
+    }
+
     // 이메일은 검증 및 저장 전에 동일한 방식으로 정규화
     public static String normalizeEmail(String email) {
         return email == null ? null : email.trim().toLowerCase(Locale.ROOT);

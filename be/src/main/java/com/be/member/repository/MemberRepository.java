@@ -16,6 +16,8 @@ import org.springframework.data.repository.query.Param;
 
 // 회원 식별값 중복 검사
 public interface MemberRepository extends JpaRepository<Member, Long> {
+    @Query("select (count(m) > 0) from Member m where :role member of m.roles")
+    boolean existsWithRole(@Param("role") com.be.member.enums.Role role);
     // 규칙별 후보를 현재 읽기로 조회·잠금: ACTIVE 및 직속 소속/입사일 범위만 사용
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

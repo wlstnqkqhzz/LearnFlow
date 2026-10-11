@@ -81,7 +81,7 @@ mysql --protocol=TCP -h 127.0.0.1 -u learnflow_app -p learnflow \
   -e "SELECT CURRENT_USER(), DATABASE(); SHOW TABLES;"
 ```
 
-`local-seed.sql`은 실행하지 않는다. 최초 ADMIN 계정 마련은 별도 운영 절차이며 Health UP의 조건은 아니다.
+`local-seed.sql`은 실행하지 않는다. 최초 ADMIN은 아래 startup Bootstrap 절차로 생성한다.
 
 ## 3. Redis와 네트워크
 
@@ -157,6 +157,34 @@ sudo journalctl -u learnflow-backend -b -n 100 --no-pager
 단일 인스턴스 전제다. 만료(서울 00:00), 재교육(서울 00:10), Expo receipt(60초) Scheduler는
 자동 구성된다. 정상 기동했다고 업무 데이터가 없는 상태에서 모든 스케줄 작업 실행까지
 검증됐다고 보지는 않는다. journald 접근은 운영자로 제한하고 Authorization/본문 debug 로그를 켜지 않는다.
+
+### 최초 ADMIN Bootstrap
+
+기본값은 비활성화다. 최초 기동 전에 Repository 밖의 root 전용 0600
+`/etc/learnflow/learnflow.env`에 운영자가 다음 값을 입력한다. 실제 값을 명령행·Git·로그에 남기지 않는다.
+
+- `LEARNFLOW_BOOTSTRAP_ADMIN_ENABLED=true`
+- `LEARNFLOW_BOOTSTRAP_ADMIN_EMAIL`: 운영 관리자 이메일
+- `LEARNFLOW_BOOTSTRAP_ADMIN_PASSWORD`: 기존 회원 정책과 동일한 8~128자 비밀번호
+- `LEARNFLOW_BOOTSTRAP_ADMIN_NAME`: 관리자 이름(최대 100자)
+
+서비스를 시작하고 일반 로그 `Initial admin created`를 확인한다. 기존 ADMIN이 한 명이라도
+있으면 상태와 관계없이 `Admin already exists; bootstrap skipped`로 종료하며 계정·비밀번호를
+변경하지 않는다. 이 경우 입력값을 제거해도 재시작할 수 있다.
+ADMIN이 없는데 이메일이 기존 회원과 겹치거나 필수 입력이 잘못되면 기동을 중단한다.
+기존 회원을 자동 승격하지 않는다.
+
+Member 필수 조건을 위해 예약 코드/사번 `LEARNFLOW_BOOTSTRAP_ADMIN`으로 활성 부서
+`시스템 관리`, 직무 `시스템 관리자`, ACTIVE ADMIN 계정을 하나의 Transaction에서 생성한다.
+입사일 필드는 생성 시점의 Asia/Seoul 날짜다. EMPLOYEE/INSTRUCTOR 역할 및 교육 자동 배정은
+추가하지 않는다. 예약 코드가 기존 데이터와 충돌하면 재사용하지 않고 실패한다.
+동시 기동은 예약 코드의 기존 DB UNIQUE 제약으로 직렬화하며 실패한 Transaction은 전체 rollback한다.
+
+안전한 SSH 터널 또는 HTTPS 경로에서 기존 로그인 API로 최초 로그인을 확인한다.
+비밀번호·응답 Token을 콘솔/공유 로그에 출력하지 않는다. 확인 즉시 env 파일에서
+`LEARNFLOW_BOOTSTRAP_ADMIN_ENABLED=false`로 바꾸고 `LEARNFLOW_BOOTSTRAP_ADMIN_PASSWORD`를
+삭제한다(email/name도 제거 가능). `sudo systemctl restart learnflow-backend` 후 Health와
+로그인을 다시 확인한다. Bootstrap은 비밀번호 재설정 수단이 아니며 공개 생성 API는 없다.
 
 ## 6. 실제 배포 검증과 재시작
 
